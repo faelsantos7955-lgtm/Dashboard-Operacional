@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --jt-red: #D50032;
@@ -59,6 +60,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);-webk
 .filter-select{background:var(--surface);border:1px solid var(--border);color:var(--text-2);padding:7px 12px;border-radius:8px;font-size:12px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;box-shadow:var(--shadow-sm);outline:none}
 .filter-select:focus{border-color:var(--jt-red)}
 .auto-tag{font-size:10px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:4px}
+.export-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-2);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;box-shadow:var(--shadow-sm);transition:.2s}
+.export-btn:hover{background:var(--jt-red);color:#fff;border-color:var(--jt-red)}
 
 .cards-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm);transition:.3s}
@@ -133,6 +136,7 @@ tbody tr:hover{background:rgba(213,0,50,.03)}
       <select class="filter-select" id="filter-pa-abs" onchange="renderAbs()"><option value="">Todos os PAs</option></select>
       <select class="filter-select" id="filter-date-abs" onchange="renderAbs()"><option value="">Todas as datas</option></select>
       <div class="auto-tag"><span class="live-dot" style="width:6px;height:6px"></span> Auto-refresh 60s</div>
+      <button class="export-btn" onclick="exportAbs()">📥 Exportar Excel</button>
     </div>
   </div>
   <div id="abs-content"><div class="loading"><div class="spinner"></div>Carregando dados...</div></div>
@@ -146,6 +150,7 @@ tbody tr:hover{background:rgba(213,0,50,.03)}
       <select class="filter-select" id="filter-pa-custo" onchange="renderCusto()"><option value="">Todos os PAs</option></select>
       <select class="filter-select" id="filter-date-custo" onchange="renderCusto()"><option value="">Todas as datas</option></select>
       <div class="auto-tag"><span class="live-dot" style="width:6px;height:6px"></span> Auto-refresh 60s</div>
+      <button class="export-btn" onclick="exportCusto()">📥 Exportar Excel</button>
     </div>
   </div>
   <div id="custo-content"><div class="loading"><div class="spinner"></div>Carregando dados...</div></div>
@@ -375,6 +380,63 @@ function renderCusto() {
   if(custoChart2)custoChart2.destroy();
   const c2=document.getElementById('chart-dvf');
   if(c2){custoChart2=new Chart(c2,{type:'bar',data:{labels:paList.map(p=>p.pa.replace('PA ','').substring(0,12)),datasets:[{label:'Demanda',data:paList.map(p=>p.demanda),backgroundColor:'#D50032',borderRadius:6},{label:'Forecast',data:paList.map(p=>p.forecast),backgroundColor:'#D0D0D0',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'rectRounded',font:{size:11}}}},scales:{x:{grid:{display:false}},y:{ticks:{callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:'#F0F0F0'}}}}});}
+}
+
+// ================================================================
+// EXPORTAR EXCEL
+// ================================================================
+function exportAbs() {
+  const data = getFiltered('abs', absData);
+  if (!data.length) { alert('Sem dados para exportar'); return; }
+  const META = CONFIG.metaAbsenteismo;
+  const rows = data.map(r => {
+    const efetivo=num(findCol(r,'efetivo')), faltas=num(findCol(r,'falta')), atestados=num(findCol(r,'atestado')), atrasos=num(findCol(r,'atraso'));
+    const total_aus=faltas+atestados+atrasos, pct_abs=efetivo>0?total_aus/efetivo:0;
+    return {
+      'Data': findCol(r,'data')||'',
+      'PA': r.PA||r.pa||findCol(r,'pa')||'',
+      'Responsável': findCol(r,'responsável','responsavel')||'',
+      'Efetivo Total': efetivo,
+      'Faltas': faltas,
+      'Atestados': atestados,
+      'Atrasos > 30min': atrasos,
+      'Total Ausências': total_aus,
+      '% Absenteísmo': (pct_abs*100).toFixed(1)+'%',
+      'Status': pct_abs<=META?'OK':'ACIMA'
+    };
+  }).filter(r => r['Efetivo Total'] > 0);
+  
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Absenteísmo');
+  ws['!cols'] = [{wch:12},{wch:20},{wch:16},{wch:14},{wch:10},{wch:12},{wch:16},{wch:16},{wch:16},{wch:10}];
+  XLSX.writeFile(wb, 'JT_Absenteismo_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+function exportCusto() {
+  const data = getFiltered('custo', custoData);
+  if (!data.length) { alert('Sem dados para exportar'); return; }
+  const rows = data.map(r => {
+    const demanda=num(findCol(r,'demanda')),forecast=num(findCol(r,'forecast')),custoMO=num(findCol(r,'mão de obra','mao de obra','custo m')),custoFrete=num(findCol(r,'frete'));
+    const custoTotal=custoMO+custoFrete,custoPct=demanda>0?custoTotal/demanda:0,desvio=forecast>0?(demanda-forecast)/forecast:0;
+    return {
+      'Data': findCol(r,'data')||'',
+      'PA': r.PA||r.pa||findCol(r,'pa')||'',
+      'Demanda Coletada': demanda,
+      'Forecast': forecast,
+      '% Desvio Forecast': (desvio*100).toFixed(1)+'%',
+      'Custo Mão de Obra (R$)': custoMO,
+      'Custo Frete Veículo (R$)': custoFrete,
+      'Custo Total (R$)': custoTotal,
+      'Custo por Pacote (R$)': custoPct.toFixed(2)
+    };
+  }).filter(r => r['Demanda Coletada'] > 0 || r['Custo Mão de Obra (R$)'] > 0);
+  
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Custo Operacional');
+  ws['!cols'] = [{wch:12},{wch:20},{wch:18},{wch:14},{wch:18},{wch:22},{wch:22},{wch:18},{wch:20}];
+  XLSX.writeFile(wb, 'JT_Custo_Operacional_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
 // ================================================================
