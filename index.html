@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J&T Express - Dashboard Operacional</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --jt-red: #D50032;
+  --jt-red-dark: #A80028;
+  --jt-red-light: #FFEAEF;
+  --green: #00A65A;
+  --green-light: #E6F7EF;
+  --red-alert: #E53935;
+  --red-light: #FFEBEE;
+  --orange: #F57C00;
+  --orange-light: #FFF3E0;
+  --blue: #1976D2;
+  --bg: #FAFAFA;
+  --surface: #FFFFFF;
+  --surface-2: #F5F5F5;
+  --border: #E8E8E8;
+  --text: #1A1A1A;
+  --text-2: #4A4A4A;
+  --text-muted: #8C8C8C;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+
+.topnav{background:var(--jt-red);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(213,0,50,0.3);position:sticky;top:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:12px}
+.jt-logo{font-size:24px;font-weight:900;color:#fff;letter-spacing:-1px}
+.jt-logo span{font-weight:400;font-size:11px;letter-spacing:3px;display:block;opacity:.85}
+.nav-div{width:1px;height:28px;background:rgba(255,255,255,.25)}
+.nav-title{color:rgba(255,255,255,.9);font-size:13px;font-weight:500}
+.nav-right{display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.8);font-size:11px}
+.nav-badge{background:rgba(255,255,255,.15);padding:4px 12px;border-radius:6px;font-weight:600;font-size:11px;color:#fff}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#4CAF50;display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.tab-bar{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;box-shadow:var(--shadow-sm)}
+.tab{padding:13px 24px;cursor:pointer;font-weight:600;font-size:13px;color:var(--text-muted);border-bottom:3px solid transparent;transition:.25s}
+.tab:hover{color:var(--text-2)}
+.tab.active{color:var(--jt-red);border-bottom-color:var(--jt-red)}
+
+.dashboard{display:none;padding:20px 28px 40px;animation:fadeIn .35s ease}
+.dashboard.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.filter-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.filter-bar h2{font-size:18px;font-weight:800;letter-spacing:-.5px}
+.filter-bar h2 span{color:var(--jt-red)}
+.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filter-select{background:var(--surface);border:1px solid var(--border);color:var(--text-2);padding:7px 12px;border-radius:8px;font-size:12px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;box-shadow:var(--shadow-sm);outline:none}
+.filter-select:focus{border-color:var(--jt-red)}
+.auto-tag{font-size:10px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:4px}
+
+.cards-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm);transition:.3s}
+.kpi-card:hover{box-shadow:var(--shadow-md)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.red::before{background:var(--jt-red)}
+.kpi-card.green::before{background:var(--green)}
+.kpi-card.blue::before{background:var(--blue)}
+.kpi-card.orange::before{background:var(--orange)}
+.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);font-weight:600;margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1}
+.kpi-sub{font-size:10px;margin-top:6px;font-weight:500}
+
+.charts-row{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:18px}
+.chart-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow-sm)}
+.panel-title{font-size:12px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.panel-title .dot{width:8px;height:8px;border-radius:2px}
+.chart-wrap{position:relative;height:280px}
+
+.table-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.table-panel .panel-title{padding:16px 18px;margin-bottom:0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{text-align:left;padding:10px 14px;font-weight:700;color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:.6px;background:var(--surface-2);border-bottom:1px solid var(--border)}
+tbody td{padding:10px 14px;border-bottom:1px solid #F0F0F0;font-weight:500}
+tbody tr:hover{background:rgba(213,0,50,.03)}
+.badge{display:inline-block;padding:2px 10px;border-radius:6px;font-size:10px;font-weight:700}
+.badge.ok{background:var(--green-light);color:var(--green)}
+.badge.alert{background:var(--red-light);color:var(--red-alert)}
+.badge.warn{background:var(--orange-light);color:var(--orange)}
+.mono{font-feature-settings:'tnum';letter-spacing:-.3px}
+.bold{font-weight:700}
+
+.loading{text-align:center;padding:60px 20px;color:var(--text-muted)}
+.loading .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--jt-red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.countdown{font-size:10px;color:var(--text-muted);font-weight:500}
+.footer{text-align:center;padding:20px;font-size:10px;color:var(--text-muted);letter-spacing:.5px}
+
+@media(max-width:900px){
+  .cards-grid{grid-template-columns:repeat(2,1fr)}
+  .charts-row{grid-template-columns:1fr}
+  .topnav,.tab-bar,.dashboard{padding-left:16px;padding-right:16px}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="nav-brand">
+    <div class="jt-logo">J&T<span>EXPRESS</span></div>
+    <div class="nav-div"></div>
+    <div class="nav-title">Dashboard Operacional</div>
+  </div>
+  <div class="nav-right">
+    <span class="live-dot"></span>
+    <div class="nav-badge" id="last-update">Conectando...</div>
+    <div class="countdown" id="countdown"></div>
+  </div>
+</nav>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('abs')">Absenteísmo</div>
+  <div class="tab" onclick="switchTab('custo')">Custo Operacional</div>
+</div>
+
+<!-- ABSENTEÍSMO -->
+<div class="dashboard active" id="dash-abs">
+  <div class="filter-bar">
+    <h2>Controle de <span>Absenteísmo</span></h2>
+    <div class="filters">
+      <select class="filter-select" id="filter-pa-abs" onchange="renderAbs()"><option value="">Todos os PAs</option></select>
+      <select class="filter-select" id="filter-date-abs" onchange="renderAbs()"><option value="">Todas as datas</option></select>
+      <div class="auto-tag"><span class="live-dot" style="width:6px;height:6px"></span> Auto-refresh 60s</div>
+    </div>
+  </div>
+  <div id="abs-content"><div class="loading"><div class="spinner"></div>Carregando dados...</div></div>
+</div>
+
+<!-- CUSTO -->
+<div class="dashboard" id="dash-custo">
+  <div class="filter-bar">
+    <h2>Controle de <span>Custo Operacional</span></h2>
+    <div class="filters">
+      <select class="filter-select" id="filter-pa-custo" onchange="renderCusto()"><option value="">Todos os PAs</option></select>
+      <select class="filter-select" id="filter-date-custo" onchange="renderCusto()"><option value="">Todas as datas</option></select>
+      <div class="auto-tag"><span class="live-dot" style="width:6px;height:6px"></span> Auto-refresh 60s</div>
+    </div>
+  </div>
+  <div id="custo-content"><div class="loading"><div class="spinner"></div>Carregando dados...</div></div>
+</div>
+
+<div class="footer">J&T EXPRESS · Dashboard Operacional · Atualização automática a cada 60 segundos</div>
+
+<script>
+// ================================================================
+// ⚙️ CONFIGURAÇÃO — COLE AQUI OS LINKS DAS SUAS PLANILHAS
+//
+// Como gerar o link:
+// 1. Abra a planilha no Google Sheets
+// 2. Vá em Arquivo → Compartilhar → Publicar na web
+// 3. Selecione a aba (DADOS ou DADOS_CUSTO)
+// 4. Formato: CSV
+// 5. Clique Publicar e cole o link aqui
+// ================================================================
+
+const CONFIG = {
+  // Cole aqui o link CSV da aba DADOS (Absenteísmo):
+  urlAbsenteismo: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS-M98EKih9ADCLaR-9vZumw3ZMjPUuMAH4iLVPWnjFsDJ70SuXVXlHo9J0fx6ntZk-gko7HziFK2vf/pub?gid=1744142360&single=true&output=csv',
+
+  // Cole aqui o link CSV da aba DADOS_CUSTO (Custo Operacional):
+  urlCusto: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTk_rUBUSXYZehQaDq4XuF5iHpppOflyd2LsozPqd1fBAtoMh_iIqCvst2r3iaV7BsEMhw4uiAEYlmV/pub?gid=1341965492&single=true&output=csv',
+
+  // Intervalo de atualização em segundos (60 = 1 minuto):
+  refreshInterval: 60,
+
+  // Meta de absenteísmo (0.02 = 2%):
+  metaAbsenteismo: 0.02,
+};
+
+// ================================================================
+// CÓDIGO DO DASHBOARD (NÃO PRECISA MEXER DAQUI PRA BAIXO)
+// ================================================================
+
+let absData = [], custoData = [];
+let absChart = null, custoChart1 = null, custoChart2 = null;
+let countdown = CONFIG.refreshInterval;
+let refreshTimer = null, countdownTimer = null;
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',(tab==='abs'&&i===0)||(tab==='custo'&&i===1)));
+  document.querySelectorAll('.dashboard').forEach(d => d.classList.remove('active'));
+  document.getElementById('dash-'+tab).classList.add('active');
+}
+
+function fetchSheet(url) {
+  return new Promise((resolve) => {
+    if (!url || url.includes('COLE_AQUI')) { resolve([]); return; }
+    // Add cache-buster to force fresh data
+    const separator = url.includes('?') ? '&' : '?';
+    const bustUrl = url + separator + '_t=' + Date.now();
+    Papa.parse(bustUrl, {
+      download: true, header: true, skipEmptyLines: true,
+      complete: r => resolve(r.data),
+      error: () => resolve([])
+    });
+  });
+}
+
+async function loadData(silent) {
+  if (!silent) {
+    if (CONFIG.urlAbsenteismo && !CONFIG.urlAbsenteismo.includes('COLE_AQUI'))
+      document.getElementById('abs-content').innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+    if (CONFIG.urlCusto && !CONFIG.urlCusto.includes('COLE_AQUI'))
+      document.getElementById('custo-content').innerHTML = '<div class="loading"><div class="spinner"></div>Carregando...</div>';
+  }
+
+  const [a, c] = await Promise.all([
+    fetchSheet(CONFIG.urlAbsenteismo),
+    fetchSheet(CONFIG.urlCusto)
+  ]);
+
+  if (a.length) { absData = a; populateFilters('abs', absData); renderAbs(); }
+  if (c.length) { custoData = c; populateFilters('custo', custoData); renderCusto(); }
+
+  const now = new Date().toLocaleTimeString('pt-BR');
+  document.getElementById('last-update').textContent = '✅ ' + now;
+  countdown = CONFIG.refreshInterval;
+}
+
+function startAutoRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  if (countdownTimer) clearInterval(countdownTimer);
+
+  refreshTimer = setInterval(() => loadData(true), CONFIG.refreshInterval * 1000);
+
+  countdownTimer = setInterval(() => {
+    countdown--;
+    if (countdown < 0) countdown = CONFIG.refreshInterval;
+    document.getElementById('countdown').textContent = 'Próx: ' + countdown + 's';
+  }, 1000);
+}
+
+function populateFilters(type, data) {
+  const paSelect = document.getElementById('filter-pa-'+type);
+  const dateSelect = document.getElementById('filter-date-'+type);
+  const savedPA = paSelect.value;
+  const savedDate = dateSelect.value;
+
+  const pas = [...new Set(data.map(r => r.PA||r.pa).filter(Boolean))].sort();
+  const dates = [...new Set(data.map(r => r.Data||r.data).filter(Boolean))].sort().reverse();
+
+  paSelect.innerHTML = '<option value="">Todos os PAs</option>' + pas.map(p=>`<option value="${p}">${p}</option>`).join('');
+  dateSelect.innerHTML = '<option value="">Todas as datas</option>' + dates.map(d=>`<option value="${d}">${d}</option>`).join('');
+
+  if (savedPA) paSelect.value = savedPA;
+  if (savedDate) dateSelect.value = savedDate;
+}
+
+function getFiltered(type, data) {
+  const pa = document.getElementById('filter-pa-'+type).value;
+  const dt = document.getElementById('filter-date-'+type).value;
+  let f = [...data];
+  if (pa) f = f.filter(r => (r.PA||r.pa)===pa);
+  if (dt) f = f.filter(r => (r.Data||r.data)===dt);
+  return f;
+}
+
+function num(v) { if(!v&&v!==0)return 0; return parseFloat(String(v).replace(/[^\d.,-]/g,'').replace(',','.'))||0; }
+function fmt(n) { return n.toLocaleString('pt-BR'); }
+function fmtPct(n) { return (n*100).toFixed(1)+'%'; }
+function fmtMoney(n) { return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function findCol(row,...names) {
+  for(const n of names) for(const key of Object.keys(row)) if(key.toLowerCase().includes(n.toLowerCase())) return row[key];
+  return null;
+}
+
+// ================================================================
+// RENDER ABSENTEÍSMO
+// ================================================================
+function renderAbs() {
+  const data = getFiltered('abs', absData);
+  if(!data.length){document.getElementById('abs-content').innerHTML='<div class="loading">Sem dados. Preencha a planilha ou ajuste filtros.</div>';return;}
+
+  const META = CONFIG.metaAbsenteismo;
+  const rows = data.map(r => {
+    const efetivo=num(findCol(r,'efetivo')), faltas=num(findCol(r,'falta')), atestados=num(findCol(r,'atestado')), atrasos=num(findCol(r,'atraso'));
+    const total_aus=faltas+atestados+atrasos, pct_abs=efetivo>0?total_aus/efetivo:0;
+    return { data:findCol(r,'data')||'', pa:r.PA||r.pa||findCol(r,'pa')||'', responsavel:findCol(r,'responsável','responsavel')||'', efetivo,faltas,atestados,atrasos,total_aus,pct_abs };
+  }).filter(r=>r.efetivo>0);
+
+  const totalEfetivo=rows.reduce((s,r)=>s+r.efetivo,0), totalAus=rows.reduce((s,r)=>s+r.total_aus,0);
+  const absGeral=totalEfetivo>0?totalAus/totalEfetivo:0;
+  const byPA={};
+  rows.forEach(r=>{if(!byPA[r.pa])byPA[r.pa]={efetivo:0,ausencias:0};byPA[r.pa].efetivo+=r.efetivo;byPA[r.pa].ausencias+=r.total_aus;});
+  const paList=Object.entries(byPA).map(([pa,d])=>({pa,pct:d.efetivo>0?d.ausencias/d.efetivo:0,...d})).sort((a,b)=>b.pct-a.pct);
+  const acimaMeta=paList.filter(p=>p.pct>META).length;
+  const absColor=absGeral<=META?'var(--green)':'var(--jt-red)';
+  const absStatus=absGeral<=META?'ok':'alert';
+
+  let html=`
+    <div class="cards-grid">
+      <div class="kpi-card red"><div class="kpi-label">Absenteísmo Geral</div><div class="kpi-value" style="color:${absColor}">${fmtPct(absGeral)}</div><div class="kpi-sub" style="color:${absColor}">${absGeral<=META?'▼':'▲'} ${Math.abs((absGeral-META)*100).toFixed(1)}pp ${absGeral<=META?'abaixo':'acima'} da meta</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Meta Máxima</div><div class="kpi-value" style="color:var(--jt-red)">${(META*100).toFixed(1)}%</div><div class="kpi-sub" style="color:var(--text-muted)">Limite definido</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Efetivo Total</div><div class="kpi-value">${fmt(totalEfetivo)}</div><div class="kpi-sub" style="color:var(--text-muted)">Colaboradores no período</div></div>
+      <div class="kpi-card orange"><div class="kpi-label">PAs Acima da Meta</div><div class="kpi-value" style="color:${acimaMeta>0?'var(--red-alert)':'var(--green)'}">${acimaMeta}</div><div class="kpi-sub" style="color:var(--text-muted)">de ${paList.length} PAs</div></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-panel"><div class="panel-title"><div class="dot" style="background:var(--jt-red)"></div> % Absenteísmo por PA</div><div class="chart-wrap"><canvas id="chart-abs"></canvas></div></div>
+      <div class="chart-panel"><div class="panel-title"><div class="dot" style="background:var(--green)"></div> Status Geral</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:280px">
+          <div style="width:180px;height:180px;border-radius:50%;background:conic-gradient(${absColor} 0deg ${Math.min(absGeral/0.05*360,360)}deg,#EEE ${Math.min(absGeral/0.05*360,360)}deg 360deg);display:flex;align-items:center;justify-content:center">
+            <div style="width:130px;height:130px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <div style="font-size:30px;font-weight:900;color:${absColor}">${fmtPct(absGeral)}</div>
+              <div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px">Absenteísmo</div>
+            </div>
+          </div>
+          <div class="badge ${absStatus}" style="margin-top:14px;padding:6px 18px;font-size:12px">${absGeral<=META?'✅ DENTRO DA META':'🔴 ACIMA DA META'}</div>
+        </div>
+      </div>
+    </div>
+    <div class="table-panel"><div class="panel-title" style="padding:16px 18px"><div class="dot" style="background:var(--jt-red)"></div> Detalhamento</div>
+      <table><thead><tr><th>Data</th><th>PA</th><th>Responsável</th><th>Efetivo</th><th>Faltas</th><th>Atestados</th><th>Atrasos</th><th>Total</th><th>%</th><th>Status</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td>${r.data}</td><td class="bold">${r.pa}</td><td>${r.responsavel}</td><td class="mono">${r.efetivo}</td><td class="mono">${r.faltas}</td><td class="mono">${r.atestados}</td><td class="mono">${r.atrasos}</td><td class="mono bold">${r.total_aus}</td><td class="mono bold" style="color:${r.pct_abs<=META?'var(--green)':'var(--jt-red)'}">${fmtPct(r.pct_abs)}</td><td><span class="badge ${r.pct_abs<=META?'ok':'alert'}">${r.pct_abs<=META?'✅ OK':'🔴 ACIMA'}</span></td></tr>`).join('')}</tbody></table>
+    </div>`;
+  document.getElementById('abs-content').innerHTML=html;
+
+  if(absChart)absChart.destroy();
+  const ctx=document.getElementById('chart-abs');
+  if(ctx){absChart=new Chart(ctx,{type:'bar',data:{labels:paList.map(p=>p.pa.replace('PA ','').substring(0,12)),datasets:[{data:paList.map(p=>(p.pct*100).toFixed(1)),backgroundColor:paList.map(p=>p.pct<=META?'#00A65A':'#D50032'),borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'},grid:{color:'#F0F0F0'}},x:{grid:{display:false}}}},plugins:[{id:'ml',afterDraw(ch){const y=ch.scales.y.getPixelForValue(META*100);const c=ch.ctx;c.save();c.strokeStyle='#E53935';c.lineWidth=2;c.setLineDash([6,4]);c.beginPath();c.moveTo(ch.chartArea.left,y);c.lineTo(ch.chartArea.right,y);c.stroke();c.fillStyle='#E53935';c.font='bold 10px Inter';c.fillText('META '+(META*100)+'%',ch.chartArea.right-70,y-6);c.restore()}}]});}
+}
+
+// ================================================================
+// RENDER CUSTO
+// ================================================================
+function renderCusto() {
+  const data=getFiltered('custo',custoData);
+  if(!data.length){document.getElementById('custo-content').innerHTML='<div class="loading">Sem dados. Preencha a planilha ou ajuste filtros.</div>';return;}
+
+  const rows=data.map(r=>{
+    const demanda=num(findCol(r,'demanda')),forecast=num(findCol(r,'forecast')),custoMO=num(findCol(r,'mão de obra','mao de obra','custo m')),custoFrete=num(findCol(r,'frete'));
+    const custoTotal=custoMO+custoFrete,custoPct=demanda>0?custoTotal/demanda:0,desvio=forecast>0?(demanda-forecast)/forecast:0;
+    return{data:findCol(r,'data')||'',pa:r.PA||r.pa||findCol(r,'pa')||'',demanda,forecast,desvio,custoMO,custoFrete,custoTotal,custoPct};
+  }).filter(r=>r.demanda>0||r.custoMO>0);
+
+  const totalDem=rows.reduce((s,r)=>s+r.demanda,0),totalFore=rows.reduce((s,r)=>s+r.forecast,0),totalCusto=rows.reduce((s,r)=>s+r.custoTotal,0);
+  const avgCustoPct=totalDem>0?totalCusto/totalDem:0,avgDesvio=totalFore>0?(totalDem-totalFore)/totalFore:0;
+  const byPA={};
+  rows.forEach(r=>{if(!byPA[r.pa])byPA[r.pa]={demanda:0,forecast:0,mo:0,frete:0};byPA[r.pa].demanda+=r.demanda;byPA[r.pa].forecast+=r.forecast;byPA[r.pa].mo+=r.custoMO;byPA[r.pa].frete+=r.custoFrete;});
+  const paList=Object.entries(byPA).map(([pa,d])=>({pa,...d,total:d.mo+d.frete})).sort((a,b)=>b.total-a.total);
+
+  let html=`
+    <div class="cards-grid">
+      <div class="kpi-card red"><div class="kpi-label">Custo Médio / Pacote</div><div class="kpi-value" style="color:var(--jt-red)">${fmtMoney(avgCustoPct)}</div><div class="kpi-sub" style="color:var(--text-muted)">Média geral</div></div>
+      <div class="kpi-card orange"><div class="kpi-label">Custo Total Operação</div><div class="kpi-value" style="color:var(--orange)">${fmtMoney(totalCusto)}</div><div class="kpi-sub" style="color:var(--text-muted)">MO + Frete</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Desvio Forecast</div><div class="kpi-value" style="color:${Math.abs(avgDesvio)<=0.05?'var(--green)':'var(--red-alert)'}">${avgDesvio>0?'+':''}${fmtPct(avgDesvio)}</div><div class="kpi-sub" style="color:var(--text-muted)">${Math.abs(avgDesvio)<=0.05?'Dentro do esperado':'Fora do esperado'}</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Demanda Coletada</div><div class="kpi-value" style="color:var(--green)">${fmt(totalDem)}</div><div class="kpi-sub" style="color:var(--text-muted)">Pacotes no período</div></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-panel"><div class="panel-title"><div class="dot" style="background:var(--jt-red)"></div> Composição de Custo por PA</div><div class="chart-wrap"><canvas id="chart-stack"></canvas></div></div>
+      <div class="chart-panel"><div class="panel-title"><div class="dot" style="background:var(--green)"></div> Demanda vs Forecast</div><div class="chart-wrap"><canvas id="chart-dvf"></canvas></div></div>
+    </div>
+    <div class="table-panel"><div class="panel-title" style="padding:16px 18px"><div class="dot" style="background:var(--orange)"></div> Detalhamento de Custo</div>
+      <table><thead><tr><th>Data</th><th>PA</th><th>Demanda</th><th>Forecast</th><th>% Desvio</th><th>Custo MO</th><th>Custo Frete</th><th>Total</th><th>R$/Pct</th></tr></thead>
+      <tbody>${rows.map(r=>{const dc=Math.abs(r.desvio)<=0.05?'ok':r.desvio>0.1?'alert':'warn';return`<tr><td>${r.data}</td><td class="bold">${r.pa}</td><td class="mono">${fmt(r.demanda)}</td><td class="mono">${fmt(r.forecast)}</td><td><span class="badge ${dc}">${r.desvio>0?'+':''}${fmtPct(r.desvio)}</span></td><td class="mono">${fmtMoney(r.custoMO)}</td><td class="mono">${fmtMoney(r.custoFrete)}</td><td class="mono bold">${fmtMoney(r.custoTotal)}</td><td class="mono bold" style="color:var(--jt-red)">${fmtMoney(r.custoPct)}</td></tr>`;}).join('')}</tbody></table>
+    </div>`;
+  document.getElementById('custo-content').innerHTML=html;
+
+  if(custoChart1)custoChart1.destroy();
+  const c1=document.getElementById('chart-stack');
+  if(c1){custoChart1=new Chart(c1,{type:'bar',data:{labels:paList.map(p=>p.pa.replace('PA ','').substring(0,12)),datasets:[{label:'Mão de Obra',data:paList.map(p=>p.mo),backgroundColor:'#D50032'},{label:'Frete',data:paList.map(p=>p.frete),backgroundColor:'#F57C00',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'rectRounded',font:{size:11}}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'},grid:{color:'#F0F0F0'}}}}});}
+
+  if(custoChart2)custoChart2.destroy();
+  const c2=document.getElementById('chart-dvf');
+  if(c2){custoChart2=new Chart(c2,{type:'bar',data:{labels:paList.map(p=>p.pa.replace('PA ','').substring(0,12)),datasets:[{label:'Demanda',data:paList.map(p=>p.demanda),backgroundColor:'#D50032',borderRadius:6},{label:'Forecast',data:paList.map(p=>p.forecast),backgroundColor:'#D0D0D0',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'rectRounded',font:{size:11}}}},scales:{x:{grid:{display:false}},y:{ticks:{callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:'#F0F0F0'}}}}});}
+}
+
+// ================================================================
+// INIT — CARREGA E INICIA AUTO-REFRESH
+// ================================================================
+window.addEventListener('DOMContentLoaded', () => {
+  loadData(false);
+  startAutoRefresh();
+});
+</script>
+</body>
+</html>
