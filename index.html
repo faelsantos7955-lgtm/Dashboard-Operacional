@@ -267,7 +267,7 @@ function getFiltered(type, data) {
   return f;
 }
 
-function num(v) { if(!v&&v!==0)return 0; return parseFloat(String(v).replace(/[^\d.,-]/g,'').replace(',','.'))||0; }
+function num(v) { if(!v&&v!==0)return 0; let s=String(v).replace(/[^\d.,-]/g,''); s=s.replace(/\./g,'').replace(',','.'); return parseFloat(s)||0; }
 function fmt(n) { return n.toLocaleString('pt-BR'); }
 function fmtPct(n) { return (n*100).toFixed(1)+'%'; }
 function fmtMoney(n) { return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
