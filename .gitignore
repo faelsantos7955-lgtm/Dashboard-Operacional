@@ -22,3 +22,5 @@ desktop.ini
 # Scripts temporários
 _*.py
 _*.js
+
+.vercel

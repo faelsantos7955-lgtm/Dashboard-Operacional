@@ -46,6 +46,45 @@
   --blue-dim: rgba(25,118,210,0.10);
   --orange-dim: rgba(245,124,0,0.10);
 }
+
+/* ═══ MODO ESCURO ═══ */
+:root[data-theme="dark"] {
+  --bg: #0F1117;
+  --surface: #1A1D24;
+  --surface-2: #232730;
+  --border: #2D323D;
+  --text: #E8E8E8;
+  --text-2: #B0B0B0;
+  --text-muted: #6E7480;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  --jt-red-light: rgba(213,0,50,0.15);
+  --green-light: rgba(0,166,90,0.18);
+  --red-light: rgba(229,57,53,0.18);
+  --orange-light: rgba(245,124,0,0.18);
+  --bg3: #2D323D;
+  --border2: #3A4150;
+}
+:root[data-theme="dark"] tbody tr:hover { background: rgba(213,0,50,0.10); }
+:root[data-theme="dark"] tbody td { border-bottom-color: var(--surface-2); }
+:root[data-theme="dark"] .login-overlay { background: var(--bg); }
+:root[data-theme="dark"] .kpi-card[style*="background:#fff"],
+:root[data-theme="dark"] .kpi-card[style*="background: #fff"] { background: var(--surface) !important; }
+:root[data-theme="dark"] [style*="background:#F8F9FB"] { background: var(--surface-2) !important; }
+:root[data-theme="dark"] [style*="background:#fff"] { background: var(--surface) !important; }
+:root[data-theme="dark"] .modal { background: var(--surface); }
+:root[data-theme="dark"] thead th { background: var(--surface-2); }
+:root[data-theme="dark"] .kpi-card { background: var(--surface); }
+:root[data-theme="dark"] .chart-panel,
+:root[data-theme="dark"] .table-panel { background: var(--surface); }
+
+.theme-toggle {
+  background: rgba(255,255,255,.15); border: none; color: #fff;
+  width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: background .15s; padding: 0;
+}
+.theme-toggle:hover { background: rgba(255,255,255,.3); }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 
@@ -456,6 +495,7 @@ tbody tr:hover{background:rgba(213,0,50,.03)}
       <span id="folder-label">Selecionar Pasta</span>
     </div>
     <span class="user-info" id="user-display"></span>
+    <button class="theme-toggle" id="theme-toggle" title="Alternar modo claro/escuro" onclick="toggleTheme()">🌙</button>
     <button class="logout-btn" onclick="doLogout()">Sair</button>
   </div>
 </nav>
@@ -494,6 +534,17 @@ tbody tr:hover{background:rgba(213,0,50,.03)}
     <h2>Controle de <span>Absenteísmo</span></h2>
     <div class="filters">
       <select class="filter-select" id="filter-mes-abs" onchange="onMonthChange('abs')"><option value="">Todos os meses</option></select>
+      <select class="filter-select" id="filter-periodo-abs" onchange="onPeriodChange('abs')">
+        <option value="">Mês inteiro</option>
+        <option value="q1">1ª quinzena (1-15)</option>
+        <option value="q2">2ª quinzena (16-fim)</option>
+        <option value="w1">1ª semana (1-7)</option>
+        <option value="w2">2ª semana (8-14)</option>
+        <option value="w3">3ª semana (15-21)</option>
+        <option value="w4">4ª semana (22-fim)</option>
+        <option value="last7">Últimos 7 dias com dados</option>
+        <option value="custom">📅 Personalizado…</option>
+      </select>
       <select class="filter-select" id="filter-pa-abs" onchange="renderAbs()"><option value="">Todos os PAs</option></select>
       <select class="filter-select" id="filter-date-abs" onchange="renderAbs()"><option value="">Todas as datas</option></select>
       <button class="export-btn" onclick="exportAbs()">📥 Excel</button>
@@ -509,6 +560,17 @@ tbody tr:hover{background:rgba(213,0,50,.03)}
     <h2>Controle de <span>Custo Operacional</span></h2>
     <div class="filters">
       <select class="filter-select" id="filter-mes-custo" onchange="onMonthChange('custo')"><option value="">Todos os meses</option></select>
+      <select class="filter-select" id="filter-periodo-custo" onchange="onPeriodChange('custo')">
+        <option value="">Mês inteiro</option>
+        <option value="q1">1ª quinzena (1-15)</option>
+        <option value="q2">2ª quinzena (16-fim)</option>
+        <option value="w1">1ª semana (1-7)</option>
+        <option value="w2">2ª semana (8-14)</option>
+        <option value="w3">3ª semana (15-21)</option>
+        <option value="w4">4ª semana (22-fim)</option>
+        <option value="last7">Últimos 7 dias com dados</option>
+        <option value="custom">📅 Personalizado…</option>
+      </select>
       <select class="filter-select" id="filter-pa-custo" onchange="renderCusto()"><option value="">Todos os PAs</option></select>
       <select class="filter-select" id="filter-date-custo" onchange="renderCusto()"><option value="">Todas as datas</option></select>
       <button class="export-btn" onclick="exportCusto()">📥 Excel</button>
@@ -550,10 +612,12 @@ tbody tr:hover{background:rgba(213,0,50,.03)}
     <div style="max-height:55vh;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
       <table id="colab-table" style="font-size:12px">
         <thead><tr>
-          <th>Colaborador</th><th style="text-align:right">Dias</th>
+          <th>Colaborador</th>
+          <th style="text-align:right" title="P+F+A (sem FE)">Dias úteis</th>
           <th style="text-align:right">Presenças</th>
           <th style="text-align:right">Faltas</th>
           <th style="text-align:right">Atestados</th>
+          <th style="text-align:right">Férias</th>
           <th style="text-align:right">% Abs</th>
         </tr></thead>
         <tbody id="colab-tbody"></tbody>
@@ -561,6 +625,28 @@ tbody tr:hover{background:rgba(213,0,50,.03)}
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeColabModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PERÍODO PERSONALIZADO -->
+<div class="modal-bg" id="modal-periodo" onclick="if(event.target===this)closePeriodModal()">
+  <div class="modal" style="width:420px">
+    <h3 style="margin-bottom:6px">Período personalizado</h3>
+    <p style="margin-bottom:14px;font-size:12px">Selecione a data de início e fim. Deixe em branco pra abrir sem filtro de dia.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase">De</label>
+        <input type="date" id="periodo-from" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Até</label>
+        <input type="date" id="periodo-to" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closePeriodModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="applyCustomPeriod()">Aplicar</button>
     </div>
   </div>
 </div>
@@ -582,9 +668,24 @@ tbody tr:hover{background:rgba(213,0,50,.03)}
 // ================================================================
 
 const CONFIG = {
-  // Meta de absenteísmo (0.02 = 2%):
+  // Meta padrão de absenteísmo (0.02 = 2%):
   metaAbsenteismo: 0.02,
+
+  // Metas customizadas por PA — sobrescrevem a meta padrão.
+  // Use o nome EXATO do PA (como aparece nos dados).
+  // Exemplos:
+  //   'PA BARUERI-SP': 0.025,    // PA grande: 2.5%
+  //   'PA MELI-CJM-SP': 0.015,   // PA pequeno: 1.5%
+  metaPorPA: {
+    // 'PA EXEMPLO': 0.025,
+  },
 };
+
+// Retorna a meta aplicável a um PA específico (com fallback pro padrão)
+function getMeta(pa) {
+  if (pa && CONFIG.metaPorPA && CONFIG.metaPorPA[pa] !== undefined) return CONFIG.metaPorPA[pa];
+  return CONFIG.metaAbsenteismo;
+}
 
 // ================================================================
 // ⚙️ USUÁRIOS — SENHAS COMO HASH SHA-256 (texto puro NUNCA fica no código)
@@ -607,6 +708,28 @@ const USERS = {
   'lider7': { hash: '4874f6e62997c3fa4c129440885cf5fbdeebda3462a3122373f7572ee1b78fc9', nome: 'Líder 7', pa: 'PA Ribeirão Preto' },
   'lider8': { hash: '1adffba81c58c4f1b5cab5754404f9cc3feddc58c3ca160b1fdda7e00e8e4ff1', nome: 'Líder 8', pa: 'PA Sorocaba' },
 };
+
+// ================================================================
+// MODO ESCURO (toggle no topnav)
+// ================================================================
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  try { localStorage.setItem('jt_theme', next); } catch(e) {}
+}
+function loadTheme() {
+  let theme = 'light';
+  try { theme = localStorage.getItem('jt_theme') || 'light'; } catch(e) {}
+  applyTheme(theme);
+}
+// Aplica antes do DOMContentLoaded pra evitar flash de tela branca
+loadTheme();
 
 // Hash SHA-256 usando Web Crypto API (nativo do browser, sem libs externas)
 async function sha256(text) {
@@ -699,7 +822,7 @@ function checkSession() {
 // ================================================================
 
 let absData = [], custoData = [], absRawData = [];
-let absChart = null, custoChart1 = null, custoChart2 = null;
+let absChart = null, custoChart1 = null, custoChart2 = null, absTrendChart = null;
 let currentFolderName = '';
 
 const TAB_ORDER = ['abs','custo','org'];
@@ -891,12 +1014,15 @@ function extractAbsColabsFromWorkbook(wb) {
 }
 
 // Agrega colaboradores em linhas dia × PA pro dashboard principal
+// IMPORTANTE: FE (férias) NÃO conta no "efetivo" — bate com a fórmula ABS% do Excel:
+//   ABS% = (F+FJ+FI + A) / (P + F+FJ+FI + A)   [exclui FE]
 function aggregateAbsByDayPA(colabs) {
   const buckets = {}; // key = "YYYY-MM-DD|PA"
   for (const c of colabs) {
     for (const dayStr of Object.keys(c.days)) {
       const day = parseInt(dayStr, 10);
       const status = c.days[day];
+      if (status === 'FE') continue;  // férias não conta como dia trabalhado
       const iso = c.ano + '-' + String(c.mes).padStart(2,'0') + '-' + String(day).padStart(2,'0');
       const key = iso + '|' + c.pa;
       if (!buckets[key]) buckets[key] = { iso, pa: c.pa, ef:0, fa:0, at:0 };
@@ -1060,6 +1186,41 @@ async function processFolderFiles(files, folderName) {
   } else {
     setFolderBadge(summary, 'ok');
   }
+
+  // Salva snapshot em cache pra próxima abertura ser ZERO CLIQUES
+  if (absData.length || custoData.length) {
+    await saveCache();
+    showCacheStatus(Date.now());
+  }
+}
+
+// Banner pequeno acima dos dashboards mostrando última atualização + botão atualizar
+function showCacheStatus(savedAt) {
+  let bar = document.getElementById('cache-status-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'cache-status-bar';
+    bar.style.cssText = 'background:var(--surface-2);border-bottom:1px solid var(--border);padding:6px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:var(--text-muted);flex-shrink:0';
+    const content = document.querySelector('.content-area');
+    if (content) content.insertBefore(bar, content.firstChild);
+  }
+  bar.innerHTML = `
+    <span>
+      <span style="color:var(--green);font-weight:700">●</span>
+      Dados em cache · última atualização: <strong style="color:var(--text)">${fmtDateTime(savedAt)}</strong> (${timeAgo(savedAt)})
+    </span>
+    <button onclick="refreshDataFromSource()" style="background:var(--jt-red);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px">
+      🔄 Atualizar agora
+    </button>
+  `;
+}
+
+// Acionado pelo botão "Atualizar agora" do banner de cache
+async function refreshDataFromSource() {
+  // Tenta primeiro reativar pasta salva (1 clique)
+  const handle = await loadDirHandle();
+  if (handle) await reactivateSavedFolder();
+  else pickFolder();
 }
 
 // Recalcula a lista de "Data" quando o "Mês" muda, depois renderiza
@@ -1073,19 +1234,164 @@ function onMonthChange(type) {
   if (type === 'abs') renderAbs(); else renderCusto();
 }
 
+// ================================================================
+// FILTRO DE PERÍODO (presets de quinzena/semana + custom range)
+// ================================================================
+const periodCustom = { abs: null, custo: null }; // {from:'YYYY-MM-DD', to:'YYYY-MM-DD'}
+let periodModalType = null; // qual aba abriu o modal
+
+function onPeriodChange(type) {
+  const sel = document.getElementById('filter-periodo-'+type);
+  if (!sel) return;
+  if (sel.value === 'custom') {
+    periodModalType = type;
+    // Preenche valores anteriores se existirem
+    const prev = periodCustom[type];
+    document.getElementById('periodo-from').value = prev ? prev.from : '';
+    document.getElementById('periodo-to').value   = prev ? prev.to   : '';
+    document.getElementById('modal-periodo').classList.add('show');
+    return;
+  }
+  // Limpa range custom quando muda pra um preset E reseta label
+  periodCustom[type] = null;
+  const customOpt = sel.querySelector('option[value="custom"]');
+  if (customOpt) customOpt.textContent = '📅 Personalizado…';
+  // Limpa data específica (range provavelmente invalida a data exata escolhida)
+  const dateSelect = document.getElementById('filter-date-'+type);
+  if (dateSelect) dateSelect.value = '';
+  // Reconstrói lista de datas pro novo período
+  const data = type === 'abs' ? absData : custoData;
+  rebuildDateFilter(type, data);
+  if (type === 'abs') renderAbs(); else renderCusto();
+}
+
+function closePeriodModal() {
+  document.getElementById('modal-periodo').classList.remove('show');
+  // Se cancelou sem aplicar, reverte dropdown pra "Mês inteiro"
+  if (periodModalType) {
+    const sel = document.getElementById('filter-periodo-'+periodModalType);
+    if (sel && sel.value === 'custom' && !periodCustom[periodModalType]) sel.value = '';
+  }
+}
+
+function applyCustomPeriod() {
+  const from = document.getElementById('periodo-from').value;
+  const to   = document.getElementById('periodo-to').value;
+  if (!from && !to) { alert('Informe pelo menos uma data.'); return; }
+  if (from && to && from > to) { alert('"De" deve ser anterior a "Até".'); return; }
+  periodCustom[periodModalType] = { from, to };
+
+  // Limpa o filtro de Mês (o período custom é mais específico e pode atravessar meses)
+  const mesSel = document.getElementById('filter-mes-'+periodModalType);
+  if (mesSel) mesSel.value = '';
+
+  // Limpa Data específica também (provavelmente fora do range agora)
+  const dtSel = document.getElementById('filter-date-'+periodModalType);
+  if (dtSel) dtSel.value = '';
+
+  // Atualiza label do dropdown com o range escolhido pra dar feedback visual
+  const sel = document.getElementById('filter-periodo-'+periodModalType);
+  if (sel) {
+    const opt = sel.querySelector('option[value="custom"]');
+    if (opt) {
+      const fmt = iso => { if (!iso) return '…'; const [Y,M,D] = iso.split('-'); return D+'/'+M+'/'+Y.slice(2); };
+      opt.textContent = '📅 ' + fmt(from) + ' a ' + fmt(to);
+    }
+    sel.value = 'custom';
+  }
+
+  // Reconstrói filtro de Data e renderiza
+  const data = periodModalType === 'abs' ? absData : custoData;
+  rebuildDateFilter(periodModalType, data);
+  document.getElementById('modal-periodo').classList.remove('show');
+  if (periodModalType === 'abs') renderAbs(); else renderCusto();
+}
+
+// Recorta um colaborador (entrada de absRawData) conforme um range de datas e/ou mês.
+// Devolve {P, F, A, FE, totalDias, diasUteis, pctAbs}
+//   totalDias = todos os dias registrados (P+F+A+FE)
+//   diasUteis = dias úteis (P+F+A) — usado no denominador de pctAbs (matches Excel)
+//   pctAbs    = (F + A) / diasUteis  — FE não entra
+function sliceColabByScope(c, mes, range) {
+  if (mes && c.mesISO !== mes) return null;
+  let P=0, F=0, A=0, FE=0;
+  for (const dayStr of Object.keys(c.days)) {
+    const day = parseInt(dayStr, 10);
+    const iso = c.ano + '-' + String(c.mes).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+    if (range) {
+      if (range.from && iso < range.from) continue;
+      if (range.to   && iso > range.to)   continue;
+    }
+    const status = c.days[day];
+    if (status === 'P') P++;
+    else if (status === 'F' || status === 'FJ' || status === 'FI') F++;
+    else if (status === 'A') A++;
+    else if (status === 'FE') FE++;
+  }
+  const totalDias = P + F + A + FE;
+  const diasUteis = P + F + A;
+  if (totalDias === 0) return null;
+  return { P, F, A, FE, totalDias, diasUteis, pctAbs: diasUteis > 0 ? (F + A) / diasUteis : 0 };
+}
+
+// Computa intervalo [fromISO, toISO] baseado no preset + mês selecionado
+function getPeriodRange(type) {
+  const sel = document.getElementById('filter-periodo-'+type);
+  if (!sel || !sel.value) return null;
+  const preset = sel.value;
+  if (preset === 'custom') {
+    const c = periodCustom[type];
+    return c && (c.from || c.to) ? c : null;
+  }
+  const mes = (document.getElementById('filter-mes-'+type)||{}).value || '';
+  if (preset === 'last7') {
+    const data = type === 'abs' ? absData : custoData;
+    const isos = lastNDaysISO(data, 7);
+    if (!isos.length) return null;
+    return { from: isos[isos.length-1], to: isos[0] };
+  }
+  if (!mes) return null; // quinzenas/semanas precisam de mês específico
+  const [Y, M] = mes.split('-').map(Number);
+  const ultimoDia = new Date(Y, M, 0).getDate();
+  const pad = n => String(n).padStart(2,'0');
+  const iso = d => mes + '-' + pad(d);
+  const ranges = {
+    q1: { from: iso(1),  to: iso(15) },
+    q2: { from: iso(16), to: iso(ultimoDia) },
+    w1: { from: iso(1),  to: iso(7) },
+    w2: { from: iso(8),  to: iso(14) },
+    w3: { from: iso(15), to: iso(21) },
+    w4: { from: iso(22), to: iso(ultimoDia) },
+  };
+  return ranges[preset] || null;
+}
+
 function rebuildDateFilter(type, data) {
   const dateSelect = document.getElementById('filter-date-'+type);
   if (!dateSelect) return;
   const mes = (document.getElementById('filter-mes-'+type) || {}).value || '';
   const savedDate = dateSelect.value;
-  const pool = mes ? data.filter(r => rowMesISO(r) === mes) : data;
-  const dates = [...new Set(pool.map(r => r.Data||r.data).filter(Boolean))].sort((a,b) => {
-    // Sort by DD/MM/YYYY chronologically using ISO
-    const toIso = s => { const m = String(s).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/); return m ? m[3]+m[2].padStart(2,'0')+m[1].padStart(2,'0') : ''; };
-    return toIso(b).localeCompare(toIso(a));
+  const range = getPeriodRange(type);
+  let pool = mes ? data.filter(r => rowMesISO(r) === mes) : data;
+  if (range) pool = pool.filter(r => {
+    const iso = r.DataISO; if (!iso) return false;
+    if (range.from && iso < range.from) return false;
+    if (range.to   && iso > range.to)   return false;
+    return true;
   });
-  dateSelect.innerHTML = '<option value="">Todas as datas</option>' + dates.map(d=>`<option value="${d}">${d}</option>`).join('');
-  if (savedDate && dates.includes(savedDate)) dateSelect.value = savedDate;
+  // Constrói mapa iso → label BR (chave única = DataISO, evita duplicatas por formato)
+  const isoToLabel = new Map();
+  pool.forEach(r => {
+    const iso = r.DataISO; if (!iso) return;
+    if (!isoToLabel.has(iso)) {
+      const [Y,M,D] = iso.split('-');
+      isoToLabel.set(iso, D + '/' + M + '/' + Y);
+    }
+  });
+  const isos = [...isoToLabel.keys()].sort().reverse();
+  dateSelect.innerHTML = '<option value="">Todas as datas</option>' +
+    isos.map(iso => `<option value="${iso}">${isoToLabel.get(iso)}</option>`).join('');
+  if (savedDate && isos.includes(savedDate)) dateSelect.value = savedDate;
 }
 
 // ================================================================
@@ -1097,14 +1403,70 @@ const FS_SUPPORTED = typeof window !== 'undefined' && 'showDirectoryPicker' in w
 
 function _openHandleDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open('jt-dashboard', 1);
+    const req = indexedDB.open('jt-dashboard', 2);
     req.onupgradeneeded = e => {
       const db = e.target.result;
-      if (!db.objectStoreNames.contains('handles')) db.createObjectStore('handles');
+      if (!db.objectStoreNames.contains('handles'))   db.createObjectStore('handles');
+      if (!db.objectStoreNames.contains('dataCache')) db.createObjectStore('dataCache');
     };
     req.onsuccess = e => resolve(e.target.result);
     req.onerror   = e => reject(req.error);
   });
+}
+
+// Cache dos dados parseados (zero cliques na próxima abertura)
+async function saveCache() {
+  try {
+    const db = await _openHandleDB();
+    const payload = {
+      absData, absRawData, custoData,
+      folderName: currentFolderName,
+      savedAt: Date.now()
+    };
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('dataCache', 'readwrite');
+      tx.objectStore('dataCache').put(payload, 'snapshot_v2');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch(e) { console.warn('Cache save falhou:', e); }
+}
+async function loadCache() {
+  try {
+    const db = await _openHandleDB();
+    return await new Promise((resolve) => {
+      const tx = db.transaction('dataCache', 'readonly');
+      const req = tx.objectStore('dataCache').get('snapshot_v2');
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror   = () => resolve(null);
+    });
+  } catch(e) { return null; }
+}
+async function clearCache() {
+  try {
+    const db = await _openHandleDB();
+    const tx = db.transaction('dataCache', 'readwrite');
+    tx.objectStore('dataCache').delete('snapshot_v2');
+  } catch(e) {}
+}
+
+// Formata "há X minutos/horas/dias atrás"
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'agora';
+  if (m < 60) return 'há ' + m + ' min';
+  const h = Math.floor(m / 60);
+  if (h < 24) return 'há ' + h + 'h';
+  const d = Math.floor(h / 24);
+  return 'há ' + d + ' dia' + (d > 1 ? 's' : '');
+}
+function fmtDateTime(ts) {
+  const d = new Date(ts);
+  return String(d.getDate()).padStart(2,'0') + '/' +
+         String(d.getMonth()+1).padStart(2,'0') + ' ' +
+         String(d.getHours()).padStart(2,'0') + ':' +
+         String(d.getMinutes()).padStart(2,'0');
 }
 async function saveDirHandle(handle) {
   try {
@@ -1218,16 +1580,30 @@ async function tryAutoRestore() {
   }
 }
 
-function loadData() {
-  // Tenta auto-restaurar pasta via File System Access (silencioso se permissão já dada)
+async function loadData() {
+  // 1) Tenta carregar do CACHE primeiro (zero cliques se já abriu antes)
+  const cache = await loadCache();
+  if (cache && (cache.absData?.length || cache.custoData?.length)) {
+    absData    = cache.absData    || [];
+    absRawData = cache.absRawData || [];
+    custoData  = cache.custoData  || [];
+    currentFolderName = cache.folderName || 'cache';
+    if (absData.length)   { populateFilters('abs',   absData);   renderAbs(); }
+    if (custoData.length) { populateFilters('custo', custoData); renderCusto(); }
+    setFolderBadge(currentFolderName + ' (cache)', 'ok');
+    showCacheStatus(cache.savedAt);
+  }
+
+  // 2) Em paralelo, tenta auto-restaurar pasta (atualiza se permissão silenciosa)
   tryAutoRestore().then(restored => {
-    if (restored) return;
-    const lastFolder = (function(){ try { return localStorage.getItem('jt_last_folder'); } catch(e){ return ''; } })();
-    if (lastFolder) {
-      // Sem suporte ou sem permissão automática — mostra hint com nome
-      setFolderBadge(lastFolder + ' (clique pra recarregar)', '');
+    if (restored) return;  // já recarregou os dados frescos
+    if (!cache || (!absData.length && !custoData.length)) {
+      // Sem cache e sem permissão automática → mostra hint
+      const lastFolder = (function(){ try { return localStorage.getItem('jt_last_folder'); } catch(e){ return ''; } })();
+      if (lastFolder) setFolderBadge(lastFolder + ' (clique pra recarregar)', '');
     }
   });
+
   if (!absData.length)   document.getElementById('abs-content').innerHTML   = '<div class="loading">📁 Clique em <strong>Selecionar Pasta</strong> no topo para carregar a base de dados.</div>';
   if (!custoData.length) document.getElementById('custo-content').innerHTML = '<div class="loading">📁 Clique em <strong>Selecionar Pasta</strong> no topo para carregar a base de dados.</div>';
 }
@@ -1267,13 +1643,23 @@ function getFiltered(type, data) {
   const dt  = document.getElementById('filter-date-'+type).value;
   const mesEl = document.getElementById('filter-mes-'+type);
   const mes = mesEl ? mesEl.value : '';
+  const range = getPeriodRange(type);
   let f = [...data];
   // Filtro por PA do usuário logado
   if (currentUser && currentUser.pa) f = f.filter(r => (r.PA||r.pa)===currentUser.pa);
   // Filtros manuais
   if (mes) f = f.filter(r => rowMesISO(r) === mes);
+  if (range) {
+    f = f.filter(r => {
+      const iso = r.DataISO; if (!iso) return false;
+      if (range.from && iso < range.from) return false;
+      if (range.to   && iso > range.to)   return false;
+      return true;
+    });
+  }
   if (pa)  f = f.filter(r => (r.PA||r.pa)===pa);
-  if (dt)  f = f.filter(r => (r.Data||r.data)===dt);
+  // Filtro de Data: agora compara por DataISO (canônico, evita problemas de formato)
+  if (dt)  f = f.filter(r => r.DataISO === dt);
   return f;
 }
 
@@ -1298,13 +1684,59 @@ function prevMonthISO(mesISO) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
 }
 
-// Aplica os mesmos filtros (PA + PA do usuário) mas força um mês específico
-function getFilteredByMonth(type, data, mesISO) {
+// Aplica os mesmos filtros (PA + PA do usuário + opcional range) mas força um mês específico
+function getFilteredByMonth(type, data, mesISO, range) {
   const pa = document.getElementById('filter-pa-'+type).value;
   let f = data.filter(r => rowMesISO(r) === mesISO);
   if (currentUser && currentUser.pa) f = f.filter(r => (r.PA||r.pa)===currentUser.pa);
   if (pa) f = f.filter(r => (r.PA||r.pa)===pa);
+  if (range) f = f.filter(r => {
+    const iso = r.DataISO; if (!iso) return false;
+    if (range.from && iso < range.from) return false;
+    if (range.to   && iso > range.to)   return false;
+    return true;
+  });
   return f;
+}
+
+// Constrói chips visuais com os filtros ativos pra transparência total ao usuário
+function activeFiltersSummary(type) {
+  const mes = (document.getElementById('filter-mes-'+type)||{}).value || '';
+  const pa  = (document.getElementById('filter-pa-'+type) ||{}).value || '';
+  const dt  = (document.getElementById('filter-date-'+type)||{}).value || '';
+  const periodoEl = document.getElementById('filter-periodo-'+type);
+  const periodoVal = periodoEl ? periodoEl.value : '';
+  const periodoText = periodoEl && periodoEl.selectedIndex >= 0
+    ? periodoEl.options[periodoEl.selectedIndex].textContent.trim()
+    : '';
+
+  const chips = [];
+  if (mes) chips.push({label: 'Mês: ' + isoToMesLabel(mes), color: '#1976D2'});
+  if (periodoVal) chips.push({label: 'Período: ' + periodoText, color: '#F57C00'});
+  if (pa)  chips.push({label: 'PA: ' + pa, color: '#D50032'});
+  if (dt)  {
+    const [Y,M,D] = dt.split('-');
+    chips.push({label: 'Dia: ' + D+'/'+M+'/'+Y, color: '#00A65A'});
+  }
+  if (currentUser && currentUser.pa) chips.push({label: '🔒 ' + currentUser.pa, color: '#8C8C8C'});
+
+  if (!chips.length) return '';
+  return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;font-size:11px;flex-wrap:wrap">
+    <span style="color:var(--text-muted);font-weight:700;letter-spacing:0.5px;text-transform:uppercase">Filtros ativos:</span>
+    ${chips.map(c => `<span style="background:${c.color};color:#fff;padding:3px 10px;border-radius:12px;font-weight:600">${c.label}</span>`).join('')}
+  </div>`;
+}
+
+// Desloca um range {from, to} para o mês anterior (mantém o dia do mês)
+function shiftRangeOneMonthBack(range) {
+  if (!range) return null;
+  const shift = iso => {
+    if (!iso) return '';
+    const [Y, M, D] = iso.split('-').map(Number);
+    const d = new Date(Y, M-2, D); // M-1 = atual; M-2 = anterior
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  };
+  return { from: shift(range.from), to: shift(range.to) };
 }
 
 // Retorna últimos N dias (datas únicas) presentes nos dados (mais recente primeiro)
@@ -1341,6 +1773,19 @@ function findCol(row,...names) {
   return null;
 }
 
+// Como findCol mas permite EXCLUIR colunas que contenham certas palavras.
+// Útil pra diferenciar "Custo Mão de Obra (R$)" de "Custo Mão de Obra Diarista (R$)".
+function findCustoCol(row, includes, excludes) {
+  const inc = includes.toLowerCase();
+  for (const key of Object.keys(row)) {
+    const k = key.toLowerCase();
+    if (!k.includes(inc)) continue;
+    if (excludes.some(e => k.includes(e.toLowerCase()))) continue;
+    return row[key];
+  }
+  return null;
+}
+
 // ================================================================
 // RENDER ABSENTEÍSMO
 // ================================================================
@@ -1359,17 +1804,26 @@ function renderAbs() {
   const absGeral=totalEfetivo>0?totalAus/totalEfetivo:0;
   const byPA={};
   rows.forEach(r=>{if(!byPA[r.pa])byPA[r.pa]={efetivo:0,ausencias:0};byPA[r.pa].efetivo+=r.efetivo;byPA[r.pa].ausencias+=r.total_aus;});
-  const paList=Object.entries(byPA).map(([pa,d])=>({pa,pct:d.efetivo>0?d.ausencias/d.efetivo:0,...d})).sort((a,b)=>b.pct-a.pct);
-  const acimaMeta=paList.filter(p=>p.pct>META).length;
+  // Cada PA tem sua própria meta (via CONFIG.metaPorPA, fallback pro META geral)
+  const paList=Object.entries(byPA).map(([pa,d])=>({
+    pa,
+    pct: d.efetivo>0 ? d.ausencias/d.efetivo : 0,
+    metaPA: getMeta(pa),
+    ...d
+  })).sort((a,b)=>b.pct-a.pct);
+  const acimaMeta=paList.filter(p=>p.pct>p.metaPA).length;
   const absColor=absGeral<=META?'var(--green)':'var(--jt-red)';
   const absStatus=absGeral<=META?'ok':'alert';
 
   // Comparativo mês anterior (só faz sentido com um mês específico selecionado)
+  // Aplica o MESMO período no mês anterior pra comparação ser apples-to-apples
   const mesAtual = (document.getElementById('filter-mes-abs')||{}).value || '';
   const mesAnterior = mesAtual ? prevMonthISO(mesAtual) : '';
+  const rangeAtual = getPeriodRange('abs');
+  const rangeAnterior = shiftRangeOneMonthBack(rangeAtual);
   let prevAbsGeral = null, prevEfetivo = null, prevAcimaMeta = null;
   if (mesAnterior) {
-    const prevRowsRaw = getFilteredByMonth('abs', absData, mesAnterior);
+    const prevRowsRaw = getFilteredByMonth('abs', absData, mesAnterior, rangeAnterior);
     if (prevRowsRaw.length) {
       const prRows = prevRowsRaw.map(r => ({
         pa: r.PA||r.pa||'',
@@ -1382,8 +1836,8 @@ function renderAbs() {
       prevEfetivo = prEf;
       prevAbsGeral = prEf > 0 ? prAus / prEf : 0;
       const prByPA = {};
-      prRows.forEach(r=>{if(!prByPA[r.pa])prByPA[r.pa]={ef:0,au:0};prByPA[r.pa].ef+=r.ef;prByPA[r.pa].au+=r.fa+r.at;});
-      prevAcimaMeta = Object.values(prByPA).filter(p => p.ef>0 && p.au/p.ef > META).length;
+      prRows.forEach(r=>{if(!prByPA[r.pa])prByPA[r.pa]={ef:0,au:0,pa:r.pa};prByPA[r.pa].ef+=r.ef;prByPA[r.pa].au+=r.fa+r.at;});
+      prevAcimaMeta = Object.values(prByPA).filter(p => p.ef>0 && p.au/p.ef > getMeta(p.pa)).length;
     }
   }
   const mesAntLabel = mesAnterior ? isoToMesLabel(mesAnterior) : '';
@@ -1402,24 +1856,27 @@ function renderAbs() {
       recentByPA[pa].ef += ef; recentByPA[pa].au += fa + at;
     });
     const acima = Object.entries(recentByPA)
-      .map(([pa,d]) => ({ pa, pct: d.ef>0 ? d.au/d.ef : 0 }))
-      .filter(p => p.pct > META)
-      .sort((a,b) => b.pct - a.pct);
+      .map(([pa,d]) => ({ pa, pct: d.ef>0 ? d.au/d.ef : 0, metaPA: getMeta(pa) }))
+      .filter(p => p.pct > p.metaPA)
+      .sort((a,b) => (b.pct - b.metaPA) - (a.pct - a.metaPA));
     if (acima.length) {
       const periodo = recentDays.length === 1 ? 'no último dia' : 'nos últimos ' + recentDays.length + ' dias';
-      const lista = acima.slice(0, 5).map(p => `<strong>${p.pa}</strong> (${fmtPct(p.pct)})`).join(', ');
+      const lista = acima.slice(0, 5).map(p => `<strong>${p.pa}</strong> (${fmtPct(p.pct)} / meta ${(p.metaPA*100).toFixed(1)}%)`).join(', ');
       const extra = acima.length > 5 ? ` <em>+${acima.length-5} outros</em>` : '';
       bannerHtml = `
-        <div style="background:linear-gradient(90deg,#FFEBEE,#FFE0E5);border:1px solid var(--red-alert);border-left:4px solid var(--red-alert);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:13px;color:#7B0019">
+        <div style="background:var(--red-light);border:1px solid var(--red-alert);border-left:4px solid var(--red-alert);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--red-alert)">
           <span style="font-size:20px">🔴</span>
-          <div><strong>${acima.length}</strong> ${acima.length===1?'PA ultrapassou':'PAs ultrapassaram'} a meta de ${(META*100).toFixed(1)}% ${periodo}: ${lista}${extra}</div>
+          <div><strong>${acima.length}</strong> ${acima.length===1?'PA ultrapassou':'PAs ultrapassaram'} a meta ${periodo}: ${lista}${extra}</div>
         </div>`;
     }
   }
 
   // Projeção fim do mês (só se mês específico selecionado e ainda há dias por correr)
+  // Projeção só faz sentido quando vendo o mês INTEIRO (sem filtro de período/data específica)
   let projHtml = '';
-  if (mesAtual) {
+  const periodoSelAbs = (document.getElementById('filter-periodo-abs')||{}).value || '';
+  const dataSelAbs    = (document.getElementById('filter-date-abs')||{}).value || '';
+  if (mesAtual && !periodoSelAbs && !dataSelAbs) {
     const diasComDados = new Set(data.map(r => r.DataISO).filter(Boolean)).size;
     const [Y, M] = mesAtual.split('-').map(Number);
     const totalDiasMes = new Date(Y, M, 0).getDate();
@@ -1430,7 +1887,7 @@ function renderAbs() {
       const projColor = projPct <= META ? 'var(--green)' : 'var(--red-alert)';
       const tendencia = projPct > absGeral ? '↗ piorando' : (projPct < absGeral ? '↘ melhorando' : '→ estável');
       projHtml = `
-        <div style="background:#F8F9FB;border:1px solid var(--border);border-left:4px solid ${projColor};border-radius:10px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text-2)">
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-left:4px solid ${projColor};border-radius:10px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text-2)">
           <span style="font-size:18px">🔮</span>
           <div style="flex:1">
             <strong>Projeção fim do mês:</strong>
@@ -1443,6 +1900,7 @@ function renderAbs() {
   }
 
   let html=`
+    ${activeFiltersSummary('abs')}
     ${bannerHtml}
     ${projHtml}
     <div class="cards-grid">
@@ -1458,9 +1916,9 @@ function renderAbs() {
         <div class="kpi-sub" style="color:var(--text-muted)">Limite definido</div>
       </div>
       <div class="kpi-card blue">
-        <div class="kpi-label">Efetivo Total</div>
+        <div class="kpi-label">Dias Úteis</div>
         <div class="kpi-value">${fmt(totalEfetivo)}</div>
-        <div class="kpi-sub" style="color:var(--text-muted)">Registros no período</div>
+        <div class="kpi-sub" style="color:var(--text-muted)">P+F+A (exclui férias)</div>
         ${mesAnterior ? `<div class="kpi-sub" style="margin-top:2px">${renderDelta(totalEfetivo, prevEfetivo, 'abs', false, mesAntLabel)}</div>` : ''}
       </div>
       <div class="kpi-card orange">
@@ -1474,8 +1932,8 @@ function renderAbs() {
       <div class="chart-panel"><div class="panel-title"><div class="dot" style="background:var(--jt-red)"></div> % Absenteísmo por PA</div><div class="chart-wrap"><canvas id="chart-abs"></canvas></div></div>
       <div class="chart-panel"><div class="panel-title"><div class="dot" style="background:var(--green)"></div> Status Geral</div>
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:280px">
-          <div style="width:180px;height:180px;border-radius:50%;background:conic-gradient(${absColor} 0deg ${Math.min(absGeral/0.05*360,360)}deg,#EEE ${Math.min(absGeral/0.05*360,360)}deg 360deg);display:flex;align-items:center;justify-content:center">
-            <div style="width:130px;height:130px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="width:180px;height:180px;border-radius:50%;background:conic-gradient(${absColor} 0deg ${Math.min(absGeral/0.05*360,360)}deg,var(--surface-2) ${Math.min(absGeral/0.05*360,360)}deg 360deg);display:flex;align-items:center;justify-content:center">
+            <div style="width:130px;height:130px;border-radius:50%;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center">
               <div style="font-size:30px;font-weight:900;color:${absColor}">${fmtPct(absGeral)}</div>
               <div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px">Absenteísmo</div>
             </div>
@@ -1484,15 +1942,136 @@ function renderAbs() {
         </div>
       </div>
     </div>
+    <div class="chart-panel" style="margin-bottom:18px">
+      <div class="panel-title"><div class="dot" style="background:var(--blue)"></div> Evolução Diária — % Absenteísmo</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chart-abs-trend"></canvas></div>
+    </div>
+    ${(function(){
+      // Top 10 colaboradores absoluto (respeita TODOS os filtros, incluindo Período)
+      const mesSel = (document.getElementById('filter-mes-abs')||{}).value || '';
+      const paSel  = (document.getElementById('filter-pa-abs') ||{}).value || '';
+      const rangeSel = getPeriodRange('abs');
+      let colabs = absRawData.slice();
+      if (currentUser && currentUser.pa) colabs = colabs.filter(c => c.pa === currentUser.pa);
+      if (paSel)  colabs = colabs.filter(c => c.pa === paSel);
+      if (!colabs.length) return '';
+      // Agrega por nome + PA, recortando os dias conforme o escopo (mês + período)
+      const byKey = {};
+      colabs.forEach(c => {
+        const slice = sliceColabByScope(c, mesSel, rangeSel);
+        if (!slice) return;
+        const k = c.colaborador + '||' + c.pa;
+        if (!byKey[k]) byKey[k] = { nome: c.colaborador, pa: c.pa, P:0, F:0, A:0, FE:0, totalDias:0, diasUteis:0 };
+        const o = byKey[k];
+        o.P += slice.P; o.F += slice.F; o.A += slice.A; o.FE += slice.FE;
+        o.totalDias += slice.totalDias; o.diasUteis += slice.diasUteis;
+      });
+      // Se filtrou por PA específico: mostra TODOS os colaboradores daquele PA (até quem tem 0%)
+      // Caso contrário: top 10 com ausências > 0 (visão executiva)
+      const isPaFilter = !!(paSel || (currentUser && currentUser.pa));
+      let top = Object.values(byKey)
+        .map(o => ({ ...o, pctAbs: o.diasUteis>0 ? (o.F + o.A) / o.diasUteis : 0 }))
+        .filter(o => o.diasUteis > 0);
+      if (!isPaFilter) top = top.filter(o => (o.F + o.A) > 0);
+      top = top.sort((a,b) => b.pctAbs - a.pctAbs || b.F - a.F);
+      if (!isPaFilter) top = top.slice(0, 10);
+      if (!top.length) return '';
+      const tituloTabela = isPaFilter
+        ? `Equipe ${paSel || currentUser.pa} — ${top.length} colaboradores`
+        : `Top 10 Colaboradores — Maior % Absenteísmo`;
+      return `<div class="table-panel" style="margin-bottom:18px">
+        <div class="panel-title" style="padding:16px 18px"><div class="dot" style="background:var(--orange)"></div> ${tituloTabela}</div>
+        <table>
+          <thead><tr>
+            <th>#</th><th>Colaborador</th><th>PA</th>
+            <th style="text-align:right" title="P+F+A (exclui FE)">Dias úteis</th>
+            <th style="text-align:right">Presenças</th>
+            <th style="text-align:right">Faltas</th>
+            <th style="text-align:right">Atestados</th>
+            <th style="text-align:right">Férias</th>
+            <th style="text-align:right">% Abs</th>
+          </tr></thead>
+          <tbody>${top.map((r,i) => {
+            const m = getMeta(r.pa);
+            const cor = r.pctAbs <= m ? 'var(--green)' : 'var(--jt-red)';
+            return `<tr>
+              <td class="mono" style="font-weight:700;color:var(--text-muted)">${i+1}</td>
+              <td class="bold">${r.nome}</td>
+              <td style="color:var(--text-2);font-size:11px">${r.pa}</td>
+              <td class="mono" style="text-align:right">${r.diasUteis}</td>
+              <td class="mono" style="text-align:right">${r.P}</td>
+              <td class="mono" style="text-align:right;color:var(--jt-red);font-weight:700">${r.F}</td>
+              <td class="mono" style="text-align:right">${r.A}</td>
+              <td class="mono" style="text-align:right;color:var(--text-muted)">${r.FE}</td>
+              <td class="mono bold" style="text-align:right;color:${cor}">${fmtPct(r.pctAbs)}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>`;
+    })()}
     <div class="table-panel"><div class="panel-title" style="padding:16px 18px"><div class="dot" style="background:var(--jt-red)"></div> Detalhamento</div>
       <table><thead><tr><th>Data</th><th>PA</th><th>Efetivo</th><th>Faltas</th><th>Atestados</th><th>Total</th><th>%</th><th>Status</th></tr></thead>
-      <tbody>${rows.map(r=>`<tr><td>${r.data}</td><td class="bold" style="cursor:pointer;color:var(--jt-red);text-decoration:underline;text-decoration-style:dotted" title="Ver colaboradores deste PA" onclick="openColabDrillDown(this.dataset.pa)" data-pa="${r.pa}">${r.pa} 🔍</td><td class="mono">${r.efetivo}</td><td class="mono">${r.faltas}</td><td class="mono">${r.atestados}</td><td class="mono bold">${r.total_aus}</td><td class="mono bold" style="color:${r.pct_abs<=META?'var(--green)':'var(--jt-red)'}">${fmtPct(r.pct_abs)}</td><td><span class="badge ${r.pct_abs<=META?'ok':'alert'}">${r.pct_abs<=META?'✅ OK':'🔴 ACIMA'}</span></td></tr>`).join('')}</tbody></table>
+      <tbody>${rows.map(r=>{const m=getMeta(r.pa);return`<tr><td>${r.data}</td><td class="bold" style="cursor:pointer;color:var(--jt-red);text-decoration:underline;text-decoration-style:dotted" title="Meta deste PA: ${(m*100).toFixed(1)}% — Clique para ver colaboradores" onclick="openColabDrillDown(this.dataset.pa)" data-pa="${r.pa}">${r.pa} 🔍</td><td class="mono">${r.efetivo}</td><td class="mono">${r.faltas}</td><td class="mono">${r.atestados}</td><td class="mono bold">${r.total_aus}</td><td class="mono bold" style="color:${r.pct_abs<=m?'var(--green)':'var(--jt-red)'}">${fmtPct(r.pct_abs)}</td><td><span class="badge ${r.pct_abs<=m?'ok':'alert'}">${r.pct_abs<=m?'✅ OK':'🔴 ACIMA'}</span></td></tr>`}).join('')}</tbody></table>
     </div>`;
   document.getElementById('abs-content').innerHTML=html;
 
   if(absChart)absChart.destroy();
   const ctx=document.getElementById('chart-abs');
-  if(ctx){absChart=new Chart(ctx,{type:'bar',data:{labels:paList.map(p=>p.pa.replace('PA ','').substring(0,12)),datasets:[{data:paList.map(p=>(p.pct*100).toFixed(1)),backgroundColor:paList.map(p=>p.pct<=META?'#00A65A':'#D50032'),borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'},grid:{color:'#F0F0F0'}},x:{grid:{display:false}}}},plugins:[{id:'ml',afterDraw(ch){const y=ch.scales.y.getPixelForValue(META*100);const c=ch.ctx;c.save();c.strokeStyle='#E53935';c.lineWidth=2;c.setLineDash([6,4]);c.beginPath();c.moveTo(ch.chartArea.left,y);c.lineTo(ch.chartArea.right,y);c.stroke();c.fillStyle='#E53935';c.font='bold 10px Inter';c.fillText('META '+(META*100)+'%',ch.chartArea.right-70,y-6);c.restore()}}]});}
+  if(ctx){absChart=new Chart(ctx,{type:'bar',data:{labels:paList.map(p=>p.pa.replace('PA ','').substring(0,12)),datasets:[{data:paList.map(p=>(p.pct*100).toFixed(1)),backgroundColor:paList.map(p=>p.pct<=p.metaPA?'#00A65A':'#D50032'),borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=paList[ctx.dataIndex];return ' ' + ctx.parsed.y + '% (meta ' + (p.metaPA*100).toFixed(1) + '%)';}}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'},grid:{color:'#F0F0F0'}},x:{grid:{display:false}}}},plugins:[{id:'ml',afterDraw(ch){const y=ch.scales.y.getPixelForValue(META*100);const c=ch.ctx;c.save();c.strokeStyle='#E53935';c.lineWidth=2;c.setLineDash([6,4]);c.beginPath();c.moveTo(ch.chartArea.left,y);c.lineTo(ch.chartArea.right,y);c.stroke();c.fillStyle='#E53935';c.font='bold 10px Inter';c.fillText('META PADRÃO '+(META*100)+'%',ch.chartArea.right-95,y-6);c.restore()}}]});}
+
+  // Série temporal (evolução diária)
+  if (absTrendChart) absTrendChart.destroy();
+  const trendCtx = document.getElementById('chart-abs-trend');
+  if (trendCtx) {
+    // Agrega por DataISO somando ef/aus de todos os PAs
+    const byDay = {};
+    data.forEach(r => {
+      const iso = r.DataISO; if (!iso) return;
+      const ef = num(findCol(r,'efetivo')), fa = num(findCol(r,'falta')), at = num(findCol(r,'atestado'));
+      if (ef <= 0) return;
+      if (!byDay[iso]) byDay[iso] = { ef:0, aus:0 };
+      byDay[iso].ef += ef; byDay[iso].aus += fa + at;
+    });
+    const sortedDays = Object.keys(byDay).sort();
+    const labels = sortedDays.map(iso => { const [Y,M,D] = iso.split('-'); return D + '/' + M; });
+    const values = sortedDays.map(iso => +(byDay[iso].ef>0 ? (byDay[iso].aus/byDay[iso].ef)*100 : 0).toFixed(2));
+    const pointColors = values.map(v => v <= META*100 ? '#00A65A' : '#D50032');
+    absTrendChart = new Chart(trendCtx, {
+      type: 'line',
+      data: { labels, datasets: [{
+        label: '% Abs',
+        data: values,
+        borderColor: '#1976D2',
+        backgroundColor: 'rgba(25,118,210,0.12)',
+        pointBackgroundColor: pointColors,
+        pointBorderColor: pointColors,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        borderWidth: 2,
+        tension: 0.25,
+        fill: true,
+      }]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.parsed.y.toFixed(2) + '%' }}},
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: v => v + '%' }, grid: { color: '#F0F0F0' }},
+          x: { grid: { display: false }}
+        }
+      },
+      plugins: [{ id: 'metaLine', afterDraw(ch) {
+        const y = ch.scales.y.getPixelForValue(META*100);
+        if (y < ch.chartArea.top || y > ch.chartArea.bottom) return;
+        const c = ch.ctx;
+        c.save();
+        c.strokeStyle = '#E53935'; c.lineWidth = 2; c.setLineDash([6,4]);
+        c.beginPath(); c.moveTo(ch.chartArea.left, y); c.lineTo(ch.chartArea.right, y); c.stroke();
+        c.fillStyle = '#E53935'; c.font = 'bold 10px Inter';
+        c.fillText('META ' + (META*100).toFixed(1) + '%', ch.chartArea.right - 70, y - 6);
+        c.restore();
+      }}]
+    });
+  }
 }
 
 // ================================================================
@@ -1506,10 +2085,7 @@ function openColabDrillDown(pa) {
   }
   const mesEl = document.getElementById('filter-mes-abs');
   const mes = mesEl ? mesEl.value : '';
-
-  // Filtra colaboradores: PA + (mês se selecionado)
-  let colabs = absRawData.filter(c => c.pa === pa);
-  if (mes) colabs = colabs.filter(c => c.mesISO === mes);
+  const range = getPeriodRange('abs');
 
   // Se o usuário tem PA fixo, só pode ver o próprio PA
   if (currentUser && currentUser.pa && currentUser.pa !== pa) {
@@ -1517,49 +2093,64 @@ function openColabDrillDown(pa) {
     return;
   }
 
+  // Filtra colaboradores: PA
+  const colabs = absRawData.filter(c => c.pa === pa);
   if (!colabs.length) {
-    alert('Sem dados de colaboradores para este PA/período.');
+    alert('Sem dados de colaboradores para este PA.');
     return;
   }
 
-  // Agrega caso o mesmo colaborador apareça em mais de um mês (multi-mês sem filtro)
+  // Recorta cada colaborador pelo escopo (mês + período) e agrega por nome
   const byName = {};
   for (const c of colabs) {
-    if (!byName[c.colaborador]) byName[c.colaborador] = { colaborador: c.colaborador, P:0, F:0, A:0, FE:0, totalDias:0 };
+    const slice = sliceColabByScope(c, mes, range);
+    if (!slice) continue;
+    if (!byName[c.colaborador]) byName[c.colaborador] = { colaborador: c.colaborador, P:0, F:0, A:0, FE:0, totalDias:0, diasUteis:0 };
     const o = byName[c.colaborador];
-    o.P += c.P; o.F += c.F; o.A += c.A; o.FE += c.FE; o.totalDias += c.totalDias;
+    o.P += slice.P; o.F += slice.F; o.A += slice.A; o.FE += slice.FE;
+    o.totalDias += slice.totalDias; o.diasUteis += slice.diasUteis;
   }
   const lista = Object.values(byName).map(o => ({
-    ...o, pctAbs: o.totalDias > 0 ? (o.F + o.A) / o.totalDias : 0
+    ...o, pctAbs: o.diasUteis > 0 ? (o.F + o.A) / o.diasUteis : 0
   })).sort((a,b) => b.pctAbs - a.pctAbs || b.F - a.F);
+  if (!lista.length) {
+    alert('Sem dados de colaboradores para este PA no período filtrado.');
+    return;
+  }
 
-  // KPIs resumo
+  // KPIs resumo — pctMedio usa diasUteis (sem FE), matching Excel
   const totColabs = lista.length;
-  const totDias = lista.reduce((s,r) => s + r.totalDias, 0);
+  const totDiasUteis = lista.reduce((s,r) => s + r.diasUteis, 0);
   const totF = lista.reduce((s,r) => s + r.F, 0);
   const totA = lista.reduce((s,r) => s + r.A, 0);
-  const pctMedio = totDias > 0 ? (totF + totA) / totDias : 0;
+  const pctMedio = totDiasUteis > 0 ? (totF + totA) / totDiasUteis : 0;
 
+  const metaPA = getMeta(pa);
+  const fmtBR = iso => { if(!iso) return '…'; const [Y,M,D]=iso.split('-'); return D+'/'+M+'/'+Y.slice(2); };
+  const escopoStr = range
+    ? `${fmtBR(range.from)} a ${fmtBR(range.to)}`
+    : (mes ? isoToMesLabel(mes) : 'Todos os meses');
   document.getElementById('colab-subtitle').innerHTML =
     `<strong style="color:var(--jt-red)">${pa}</strong> · ` +
-    (mes ? isoToMesLabel(mes) : 'Todos os meses') +
-    ` · ordenado por % absenteísmo`;
+    escopoStr +
+    ` · meta ${(metaPA*100).toFixed(1)}% · ordenado por % absenteísmo`;
 
   document.getElementById('colab-summary').innerHTML = `
     <div class="kpi-card" style="padding:10px"><div class="kpi-label">Colaboradores</div><div class="kpi-value" style="font-size:20px">${totColabs}</div></div>
-    <div class="kpi-card" style="padding:10px"><div class="kpi-label">Dias Registrados</div><div class="kpi-value" style="font-size:20px">${totDias}</div></div>
+    <div class="kpi-card" style="padding:10px"><div class="kpi-label">Dias Úteis</div><div class="kpi-value" style="font-size:20px">${totDiasUteis}</div><div class="kpi-sub" style="color:var(--text-muted);font-size:9px">P+F+A (sem FE)</div></div>
     <div class="kpi-card" style="padding:10px"><div class="kpi-label">Faltas</div><div class="kpi-value" style="font-size:20px;color:var(--jt-red)">${totF}</div></div>
-    <div class="kpi-card" style="padding:10px"><div class="kpi-label">% Abs Médio</div><div class="kpi-value" style="font-size:20px;color:${pctMedio<=CONFIG.metaAbsenteismo?'var(--green)':'var(--jt-red)'}">${fmtPct(pctMedio)}</div></div>
+    <div class="kpi-card" style="padding:10px"><div class="kpi-label">% Abs Médio</div><div class="kpi-value" style="font-size:20px;color:${pctMedio<=metaPA?'var(--green)':'var(--jt-red)'}">${fmtPct(pctMedio)}</div></div>
   `;
 
   document.getElementById('colab-tbody').innerHTML = lista.map(r => {
-    const cor = r.pctAbs <= CONFIG.metaAbsenteismo ? 'var(--green)' : 'var(--jt-red)';
+    const cor = r.pctAbs <= metaPA ? 'var(--green)' : 'var(--jt-red)';
     return `<tr>
       <td class="bold">${r.colaborador}</td>
-      <td class="mono" style="text-align:right">${r.totalDias}</td>
+      <td class="mono" style="text-align:right" title="P+F+A (exclui FE)">${r.diasUteis}</td>
       <td class="mono" style="text-align:right">${r.P}</td>
       <td class="mono" style="text-align:right;color:var(--jt-red)">${r.F}</td>
       <td class="mono" style="text-align:right">${r.A}</td>
+      <td class="mono" style="text-align:right;color:var(--text-muted)">${r.FE}</td>
       <td class="mono bold" style="text-align:right;color:${cor}">${fmtPct(r.pctAbs)}</td>
     </tr>`;
   }).join('');
@@ -1579,9 +2170,18 @@ function renderCusto() {
   if(!data.length){document.getElementById('custo-content').innerHTML='<div class="loading">Sem dados. Preencha a planilha ou ajuste filtros.</div>';return;}
 
   const rows=data.map(r=>{
-    const demanda=num(findCol(r,'demanda')),forecast=num(findCol(r,'forecast')),custoMO=num(findCol(r,'mão de obra','mao de obra','custo m')),custoFrete=num(findCol(r,'frete'));
-    const custoTotal=custoMO+custoFrete,custoPct=demanda>0?custoTotal/demanda:0,desvio=forecast>0?(demanda-forecast)/forecast:0;
-    return{data:findCol(r,'data')||'',pa:r.PA||r.pa||findCol(r,'pa')||'',demanda,forecast,desvio,custoMO,custoFrete,custoTotal,custoPct};
+    const demanda=num(findCol(r,'demanda'));
+    const forecast=num(findCol(r,'forecast'));
+    // Excel: Custo Total = MO fixo + MO Diarista + MO Temporario + Frete
+    const moFixo  = num(findCustoCol(r, 'mão de obra', ['diarista','temporario']));
+    const moDia   = num(findCustoCol(r, 'diarista', []));
+    const moTemp  = num(findCustoCol(r, 'temporario', []));
+    const custoMO = moFixo + moDia + moTemp;
+    const custoFrete = num(findCol(r,'frete'));
+    const custoTotal = custoMO + custoFrete;
+    const custoPct = demanda > 0 ? custoTotal / demanda : 0;
+    const desvio   = forecast > 0 ? (demanda - forecast) / forecast : 0;
+    return{data:findCol(r,'data')||'',pa:r.PA||r.pa||findCol(r,'pa')||'',demanda,forecast,desvio,moFixo,moDia,moTemp,custoMO,custoFrete,custoTotal,custoPct};
   }).filter(r=>r.demanda>0||r.custoMO>0);
 
   const totalDem=rows.reduce((s,r)=>s+r.demanda,0),totalFore=rows.reduce((s,r)=>s+r.forecast,0),totalCusto=rows.reduce((s,r)=>s+r.custoTotal,0);
@@ -1590,17 +2190,21 @@ function renderCusto() {
   rows.forEach(r=>{if(!byPA[r.pa])byPA[r.pa]={demanda:0,forecast:0,mo:0,frete:0};byPA[r.pa].demanda+=r.demanda;byPA[r.pa].forecast+=r.forecast;byPA[r.pa].mo+=r.custoMO;byPA[r.pa].frete+=r.custoFrete;});
   const paList=Object.entries(byPA).map(([pa,d])=>({pa,...d,total:d.mo+d.frete})).sort((a,b)=>b.total-a.total);
 
-  // Comparativo mês anterior
+  // Comparativo mês anterior (aplica MESMO período do filtro atual no mês anterior)
   const mesAtualC = (document.getElementById('filter-mes-custo')||{}).value || '';
   const mesAnteriorC = mesAtualC ? prevMonthISO(mesAtualC) : '';
+  const rangeAtualC = getPeriodRange('custo');
+  const rangeAnteriorC = shiftRangeOneMonthBack(rangeAtualC);
   let prevAvgCustoPct=null, prevTotalCusto=null, prevAvgDesvio=null, prevTotalDem=null;
   if (mesAnteriorC) {
-    const prevRowsRaw = getFilteredByMonth('custo', custoData, mesAnteriorC);
+    const prevRowsRaw = getFilteredByMonth('custo', custoData, mesAnteriorC, rangeAnteriorC);
     if (prevRowsRaw.length) {
       const pr = prevRowsRaw.map(r => ({
         demanda: num(findCol(r,'demanda')),
         forecast: num(findCol(r,'forecast')),
-        mo: num(findCol(r,'mão de obra','mao de obra','custo m')),
+        mo: num(findCustoCol(r, 'mão de obra', ['diarista','temporario']))
+          + num(findCustoCol(r, 'diarista', []))
+          + num(findCustoCol(r, 'temporario', [])),
         frete: num(findCol(r,'frete'))
       })).filter(r => r.demanda>0 || r.mo>0);
       const pDem = pr.reduce((s,r)=>s+r.demanda,0);
@@ -1624,7 +2228,9 @@ function renderCusto() {
     recentRowsC.forEach(r => {
       const pa = r.PA||r.pa||''; if(!pa) return;
       const dem = num(findCol(r,'demanda'));
-      const mo  = num(findCol(r,'mão de obra','mao de obra','custo m'));
+      const mo  = num(findCustoCol(r, 'mão de obra', ['diarista','temporario']))
+               + num(findCustoCol(r, 'diarista', []))
+               + num(findCustoCol(r, 'temporario', []));
       const fr  = num(findCol(r,'frete'));
       if (dem <= 0) return;
       if (!recentByPAC[pa]) recentByPAC[pa] = { dem:0, cu:0 };
@@ -1646,9 +2252,11 @@ function renderCusto() {
     }
   }
 
-  // Projeção fim do mês para Custo
+  // Projeção fim do mês — só com mês inteiro (sem filtro de período/data)
   let projHtmlC = '';
-  if (mesAtualC) {
+  const periodoSelCusto = (document.getElementById('filter-periodo-custo')||{}).value || '';
+  const dataSelCusto    = (document.getElementById('filter-date-custo')||{}).value || '';
+  if (mesAtualC && !periodoSelCusto && !dataSelCusto) {
     const diasComDados = new Set(data.map(r => r.DataISO).filter(Boolean)).size;
     const [Y, M] = mesAtualC.split('-').map(Number);
     const totalDiasMes = new Date(Y, M, 0).getDate();
@@ -1658,7 +2266,7 @@ function renderCusto() {
       const projCpp   = projDem > 0 ? projCusto / projDem : 0;
       const tendencia = projCpp > avgCustoPct ? '↗ encarecendo' : (projCpp < avgCustoPct ? '↘ otimizando' : '→ estável');
       projHtmlC = `
-        <div style="background:#F8F9FB;border:1px solid var(--border);border-left:4px solid var(--orange);border-radius:10px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text-2)">
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-left:4px solid var(--orange);border-radius:10px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text-2)">
           <span style="font-size:18px">🔮</span>
           <div style="flex:1">
             <strong>Projeção fim do mês:</strong>
@@ -1671,6 +2279,7 @@ function renderCusto() {
   }
 
   let html=`
+    ${activeFiltersSummary('custo')}
     ${bannerHtmlC}
     ${projHtmlC}
     <div class="cards-grid">
@@ -1704,7 +2313,7 @@ function renderCusto() {
       <div class="chart-panel"><div class="panel-title"><div class="dot" style="background:var(--green)"></div> Demanda vs Forecast</div><div class="chart-wrap"><canvas id="chart-dvf"></canvas></div></div>
     </div>
     <div class="table-panel"><div class="panel-title" style="padding:16px 18px"><div class="dot" style="background:var(--orange)"></div> Detalhamento de Custo</div>
-      <table><thead><tr><th>Data</th><th>PA</th><th>Demanda</th><th>Forecast</th><th>% Desvio</th><th>Custo MO</th><th>Custo Frete</th><th>Total</th><th>R$/Pct</th></tr></thead>
+      <table><thead><tr><th>Data</th><th>PA</th><th>Demanda</th><th>Forecast</th><th>% Desvio</th><th title="MO Fixo + Diarista + Temporário">Custo MO Total</th><th>Custo Frete</th><th>Total</th><th>R$/Pct</th></tr></thead>
       <tbody>${rows.map(r=>{const dc=Math.abs(r.desvio)<=0.05?'ok':r.desvio>0.1?'alert':'warn';return`<tr><td>${r.data}</td><td class="bold">${r.pa}</td><td class="mono">${fmt(r.demanda)}</td><td class="mono">${fmt(r.forecast)}</td><td><span class="badge ${dc}">${r.desvio>0?'+':''}${fmtPct(r.desvio)}</span></td><td class="mono">${fmtMoney(r.custoMO)}</td><td class="mono">${fmtMoney(r.custoFrete)}</td><td class="mono bold">${fmtMoney(r.custoTotal)}</td><td class="mono bold" style="color:var(--jt-red)">${fmtMoney(r.custoPct)}</td></tr>`;}).join('')}</tbody></table>
     </div>`;
   document.getElementById('custo-content').innerHTML=html;
@@ -1751,25 +2360,36 @@ function exportCusto() {
   const data = getFiltered('custo', custoData);
   if (!data.length) { alert('Sem dados para exportar'); return; }
   const rows = data.map(r => {
-    const demanda=num(findCol(r,'demanda')),forecast=num(findCol(r,'forecast')),custoMO=num(findCol(r,'mão de obra','mao de obra','custo m')),custoFrete=num(findCol(r,'frete'));
-    const custoTotal=custoMO+custoFrete,custoPct=demanda>0?custoTotal/demanda:0,desvio=forecast>0?(demanda-forecast)/forecast:0;
+    const demanda = num(findCol(r,'demanda'));
+    const forecast = num(findCol(r,'forecast'));
+    const moFixo = num(findCustoCol(r, 'mão de obra', ['diarista','temporario']));
+    const moDia  = num(findCustoCol(r, 'diarista', []));
+    const moTemp = num(findCustoCol(r, 'temporario', []));
+    const custoMO = moFixo + moDia + moTemp;
+    const custoFrete = num(findCol(r,'frete'));
+    const custoTotal = custoMO + custoFrete;
+    const custoPct = demanda > 0 ? custoTotal / demanda : 0;
+    const desvio = forecast > 0 ? (demanda - forecast) / forecast : 0;
     return {
       'Data': findCol(r,'data')||'',
       'PA': r.PA||r.pa||findCol(r,'pa')||'',
       'Demanda Coletada': demanda,
       'Forecast': forecast,
       '% Desvio Forecast': (desvio*100).toFixed(1)+'%',
-      'Custo Mão de Obra (R$)': custoMO,
+      'Custo MO Fixo (R$)': moFixo,
+      'Custo MO Diarista (R$)': moDia,
+      'Custo MO Temporario (R$)': moTemp,
+      'Custo MO Total (R$)': custoMO,
       'Custo Frete Veículo (R$)': custoFrete,
       'Custo Total (R$)': custoTotal,
       'Custo por Pacote (R$)': custoPct.toFixed(2)
     };
-  }).filter(r => r['Demanda Coletada'] > 0 || r['Custo Mão de Obra (R$)'] > 0);
-  
+  }).filter(r => r['Demanda Coletada'] > 0 || r['Custo MO Total (R$)'] > 0);
+
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Custo Operacional');
-  ws['!cols'] = [{wch:12},{wch:20},{wch:18},{wch:14},{wch:18},{wch:22},{wch:22},{wch:18},{wch:20}];
+  ws['!cols'] = [{wch:12},{wch:20},{wch:18},{wch:14},{wch:18},{wch:18},{wch:20},{wch:22},{wch:20},{wch:22},{wch:18},{wch:20}];
   XLSX.writeFile(wb, 'JT_Custo_Operacional_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
@@ -1797,11 +2417,15 @@ function _pdfHeader(doc, titulo, periodo) {
   doc.setTextColor(20, 20, 20);
   doc.setFont('helvetica', 'bold'); doc.setFontSize(15);
   doc.text(titulo, M, 28);
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
   doc.setTextColor(120, 120, 120);
-  doc.text('Período: ' + periodo, M, 33);
+  // Quebra o label de período se ficar longo (com todos os filtros)
+  const periodoLines = doc.splitTextToSize('Periodo: ' + periodo, W - M*2);
+  periodoLines.forEach((ln, i) => doc.text(ln, M, 33 + i * 4));
+  const sepY = 33 + periodoLines.length * 4 + 1;
   doc.setDrawColor(220, 220, 220);
-  doc.line(M, 36, W - M, 36);
+  doc.line(M, sepY, W - M, sepY);
+  return sepY + 4;  // próximo y disponível pro conteúdo
 }
 
 function _pdfKpiGrid(doc, y, kpis) {
@@ -1838,19 +2462,50 @@ function _pdfKpiGrid(doc, y, kpis) {
   return y + boxH;
 }
 
+// Constrói a string de período pro cabeçalho do PDF baseada nos filtros ativos
+function buildPdfPeriodLabel(type) {
+  const mes = (document.getElementById('filter-mes-'+type)||{}).value || '';
+  const pa  = (document.getElementById('filter-pa-'+type) ||{}).value || '';
+  const dt  = (document.getElementById('filter-date-'+type)||{}).value || '';
+  const periodoEl = document.getElementById('filter-periodo-'+type);
+  const periodoVal = periodoEl ? periodoEl.value : '';
+  const periodoText = periodoEl && periodoEl.selectedIndex >= 0
+    ? periodoEl.options[periodoEl.selectedIndex].textContent.trim()
+    : '';
+  const parts = [];
+  parts.push(mes ? isoToMesLabel(mes) : 'Todos os meses');
+  if (periodoVal) parts.push(periodoText);
+  if (dt) { const [Y,M,D] = dt.split('-'); parts.push('Dia ' + D+'/'+M+'/'+Y); }
+  if (pa) parts.push(pa);
+  if (currentUser && currentUser.pa) parts.push('login: ' + currentUser.pa);
+  return parts.join(' · ');
+}
+
 function _pdfCommentary(doc, y, lines) {
   const W = 210, M = 14;
+  const innerW = W - M*2 - 6;  // largura útil descontando padding
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+
+  // Quebra cada bullet em sub-linhas que caibam na largura, com indentação
+  const rendered = [];
+  lines.forEach(ln => {
+    const wrapped = doc.splitTextToSize('• ' + ln, innerW);
+    wrapped.forEach((w, i) => {
+      rendered.push({ text: w, indent: i > 0 ? 4 : 0 }); // sub-linhas com indent
+    });
+  });
+
+  const h = 8 + rendered.length * 4.5;
   doc.setDrawColor(220, 220, 220);
   doc.setFillColor(248, 249, 251);
-  const h = 8 + lines.length * 5;
   doc.rect(M, y, W - M*2, h, 'FD');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
   doc.setTextColor(213, 0, 50);
   doc.text('» ANÁLISE AUTOMÁTICA', M + 3, y + 5.5);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
   doc.setTextColor(60, 60, 60);
-  lines.forEach((ln, i) => {
-    doc.text('• ' + ln, M + 3, y + 11 + i * 5);
+  rendered.forEach((r, i) => {
+    doc.text(r.text, M + 3 + r.indent, y + 11 + i * 4.5);
   });
   return y + h;
 }
@@ -1872,7 +2527,7 @@ function generatePdfAbs() {
 
   const META = CONFIG.metaAbsenteismo;
   const mesAtual = (document.getElementById('filter-mes-abs')||{}).value || '';
-  const periodo = mesAtual ? isoToMesLabel(mesAtual) : 'Todos os meses';
+  const periodo = buildPdfPeriodLabel('abs');
 
   // Recalcula tudo (mesma lógica do renderAbs)
   const rows = data.map(r => {
@@ -1884,8 +2539,8 @@ function generatePdfAbs() {
   const absGeral = totalEf > 0 ? totalAus/totalEf : 0;
   const byPA = {};
   rows.forEach(r => { if(!byPA[r.pa]) byPA[r.pa]={ef:0,aus:0}; byPA[r.pa].ef+=r.ef; byPA[r.pa].aus+=r.aus; });
-  const paList = Object.entries(byPA).map(([pa,d]) => ({ pa, ef:d.ef, aus:d.aus, pct: d.ef>0?d.aus/d.ef:0 })).sort((a,b) => b.pct - a.pct);
-  const acima = paList.filter(p => p.pct > META);
+  const paList = Object.entries(byPA).map(([pa,d]) => ({ pa, ef:d.ef, aus:d.aus, pct: d.ef>0?d.aus/d.ef:0, metaPA: getMeta(pa) })).sort((a,b) => b.pct - a.pct);
+  const acima = paList.filter(p => p.pct > p.metaPA);
 
   // Projeção (se mês específico)
   let proj = null;
@@ -1900,25 +2555,25 @@ function generatePdfAbs() {
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  _pdfHeader(doc, 'Relatório de Absenteísmo', periodo);
+  const startY = _pdfHeader(doc, 'Relatório de Absenteísmo', periodo);
 
   // KPIs
   const RED = [213, 0, 50], GREEN = [0, 166, 90], BLUE = [25, 118, 210], ORANGE = [245, 124, 0];
-  let y = _pdfKpiGrid(doc, 40, [
+  let y = _pdfKpiGrid(doc, startY, [
     { label: '% Absenteísmo', value: fmtPct(absGeral), sub: 'Meta: ' + (META*100).toFixed(1) + '%', color: absGeral <= META ? GREEN : RED },
-    { label: 'Efetivo Total', value: fmt(totalEf), sub: 'registros no período', color: BLUE },
+    { label: 'Dias Uteis', value: fmt(totalEf), sub: 'P+F+A (exclui ferias)', color: BLUE },
     { label: 'PAs Acima da Meta', value: String(acima.length), sub: 'de ' + paList.length + ' PAs', color: acima.length > 0 ? RED : GREEN },
-    { label: 'Total Ausências', value: fmt(totalAus), sub: 'faltas + atestados', color: ORANGE },
+    { label: 'Total Ausencias', value: fmt(totalAus), sub: 'faltas + atestados', color: ORANGE },
   ]);
 
-  // Top 5 piores PAs
+  // Top piores PAs (até 10)
   y += 8;
   doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 30, 30);
-  doc.text('Top PAs por % Absenteísmo', 14, y);
+  doc.text(paList.length === 1 ? 'Detalhe do PA filtrado' : 'PAs por % Absenteísmo', 14, y);
   y += 3;
   doc.autoTable({
     startY: y,
-    head: [['#', 'PA', 'Efetivo', 'Faltas', 'Atestados', '% Abs', 'Status']],
+    head: [['#', 'PA', 'Dias úteis', 'Faltas', 'Atestados', '% Abs', 'Meta', 'Status']],
     body: paList.slice(0, 10).map((p, i) => [
       String(i+1),
       p.pa,
@@ -1926,12 +2581,13 @@ function generatePdfAbs() {
       fmt(byPA[p.pa].aus - rows.filter(r => r.pa === p.pa).reduce((s,r)=>s+r.at,0)),
       fmt(rows.filter(r => r.pa === p.pa).reduce((s,r)=>s+r.at,0)),
       fmtPct(p.pct),
-      p.pct <= META ? 'OK' : 'ACIMA'
+      (p.metaPA*100).toFixed(1) + '%',
+      p.pct <= p.metaPA ? 'OK' : 'ACIMA'
     ]),
     theme: 'grid', styles: { fontSize: 8, cellPadding: 2 },
     headStyles: { fillColor: [213, 0, 50], textColor: [255,255,255], fontStyle: 'bold' },
     didParseCell: function(d) {
-      if (d.section === 'body' && d.column.index === 6) {
+      if (d.section === 'body' && d.column.index === 7) {
         d.cell.styles.textColor = d.cell.raw === 'OK' ? [0,150,80] : [220, 30, 30];
         d.cell.styles.fontStyle = 'bold';
       }
@@ -1948,10 +2604,10 @@ function generatePdfAbs() {
     lines.push('Absenteísmo geral em ' + fmtPct(absGeral) + ' — ACIMA da meta de ' + (META*100).toFixed(1) + '% (' + ((absGeral-META)*100).toFixed(1) + 'pp).');
   }
   if (acima.length > 0) {
-    const top3 = acima.slice(0, 3).map(p => p.pa + ' (' + fmtPct(p.pct) + ')').join(', ');
-    lines.push(acima.length + ' PA(s) acima da meta. Atenção prioritária: ' + top3 + '.');
+    const top3 = acima.slice(0, 3).map(p => p.pa + ' (' + fmtPct(p.pct) + ' / meta ' + (p.metaPA*100).toFixed(1) + '%)').join(', ');
+    lines.push(acima.length + ' PA(s) acima da meta. Atencao prioritaria: ' + top3 + '.');
   } else {
-    lines.push('Nenhum PA acima da meta neste período.');
+    lines.push('Nenhum PA acima da meta neste periodo.');
   }
   if (proj) {
     lines.push('Projeção fim do mês: ' + fmtPct(proj.pct) + ' (com base em ' + proj.dias + ' de ' + proj.total + ' dias com dados).');
@@ -1968,12 +2624,14 @@ function generatePdfCusto() {
   if (!data.length) { alert('Sem dados para o filtro atual.'); return; }
 
   const mesAtual = (document.getElementById('filter-mes-custo')||{}).value || '';
-  const periodo = mesAtual ? isoToMesLabel(mesAtual) : 'Todos os meses';
+  const periodo = buildPdfPeriodLabel('custo');
 
   const rows = data.map(r => {
     const dem = num(findCol(r,'demanda'));
     const fore = num(findCol(r,'forecast'));
-    const mo = num(findCol(r,'mão de obra','mao de obra','custo m'));
+    const mo = num(findCustoCol(r, 'mão de obra', ['diarista','temporario']))
+             + num(findCustoCol(r, 'diarista', []))
+             + num(findCustoCol(r, 'temporario', []));
     const fr = num(findCol(r,'frete'));
     return { pa: r.PA||r.pa||'', dem, fore, mo, fr, total: mo+fr, cpp: dem>0 ? (mo+fr)/dem : 0 };
   }).filter(r => r.dem > 0 || r.mo > 0);
@@ -2004,10 +2662,10 @@ function generatePdfCusto() {
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  _pdfHeader(doc, 'Relatório de Custo Operacional', periodo);
+  const startY = _pdfHeader(doc, 'Relatório de Custo Operacional', periodo);
 
   const RED = [213, 0, 50], GREEN = [0, 166, 90], BLUE = [25, 118, 210], ORANGE = [245, 124, 0];
-  let y = _pdfKpiGrid(doc, 40, [
+  let y = _pdfKpiGrid(doc, startY, [
     { label: 'Custo / Pacote', value: fmtMoney(avgCpp), sub: 'média geral', color: RED },
     { label: 'Custo Total', value: fmtMoney(totCusto), sub: 'MO + Frete', color: ORANGE },
     { label: 'Desvio Forecast', value: (avgDesvio>0?'+':'') + fmtPct(avgDesvio), sub: Math.abs(avgDesvio)<=0.05 ? 'OK' : 'fora do esperado', color: Math.abs(avgDesvio)<=0.05 ? GREEN : RED },
